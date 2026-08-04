@@ -18,25 +18,6 @@ vlc_modules += {
 }
 
 # XXX: netsync disabled, move current code to new playlist/player and add a
-#      way to control the output clock from the player
-# vlc_modules += {
-#     'name' : 'netsync',
-#     'sources' : files('netsync.c'),
-#     'dependencies' : [socket_libs]
-# }
-
-# Remote control
-vlc_modules += {
-    'name' : 'rc',
-    'sources' : files(
-        'cli/player.c',
-        'cli/playlist.c',
-        'cli/cli.c',
-        'cli/cli.h'
-    ),
-    'dependencies' : [socket_libs, m_lib]
-}
-
 # XCB hotkeys
 if xcb_dep.found() and xcb_keysyms_dep.found()
     vlc_modules += {

@@ -118,12 +118,6 @@ FocusScope {
             name: "music",
             url: "qrc:///qt/qml/VLC/MediaLibrary/MusicDisplay.qml"
         }, {
-            name: "network",
-            url: "qrc:///qt/qml/VLC/Network/BrowseDisplay.qml"
-        }, {
-            name: "discover",
-            url: "qrc:///qt/qml/VLC/Network/DiscoverDisplay.qml"
-        }, {
             name: "mlsettings",
             url: "qrc:///qt/qml/VLC/MediaLibrary/MLFoldersSettings.qml"
         }
@@ -416,7 +410,13 @@ FocusScope {
                         colorSet: ColorContext.Window
                     }
 
-                    backgroundColor: (ready ? "transparent" : stackViewParent.color)
+                    // Upstream drops this to "transparent" once the effect is
+                    // ready and relies on the compositor blurring what is
+                    // behind the window. Wayland compositors do not blur behind
+                    // arbitrary surfaces, and on Wayland the video sits in a
+                    // subsurface *below* this one, so "transparent" here means
+                    // the desktop shows straight through. Keep it opaque.
+                    backgroundColor: stackViewParent.color
                     tint: frostedTheme.bg.secondary
 
                     // Prevent overdraw (the extension margin should not be painted).

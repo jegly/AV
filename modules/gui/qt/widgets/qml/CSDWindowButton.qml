@@ -1,5 +1,6 @@
 /*****************************************************************************
  * Copyright (C) 2020 VLC authors and VideoLAN
+ * Copyright (C) 2026 Medea authors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +17,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Templates as T
-import QtQuick.Layouts
 
 import VLC.Widgets as Widgets
 import VLC.MainInterface
 import VLC.Style
 
 
+// Traffic-light window button: a filled circle that reveals its glyph only
+// while the button group is hovered, the way macOS does it. Upstream drew a
+// full-height rectangle with a permanently visible icon, which is the most
+// dated element of the window chrome.
 T.Button {
     id: control
+
+    // Fill colour of the dot; set per button type by CSDWindowButtonSet.
+    property color dotColor: "#8A8A8E"
 
     property color color
     property color hoverColor
@@ -37,52 +43,58 @@ T.Button {
 
     readonly property bool _paintHovered: control.hovered || showHovered
 
-    padding: 0
-    width: VLCStyle.dp(40, VLCStyle.scale)
+    readonly property int dotSize: VLCStyle.dp(13, VLCStyle.scale)
 
-    implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
-                            implicitContentWidth + leftPadding + rightPadding)
-    implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
-                             implicitContentHeight + topPadding + bottomPadding)
+    padding: 0
+
+    width: dotSize + VLCStyle.dp(9, VLCStyle.scale)
+    implicitWidth: width
+    implicitHeight: dotSize
 
     focusPolicy: Qt.NoFocus
 
-    background: Rectangle {
-        height: control.height
-        width: control.width
-        color: {
-            if (control.pressed || (control.externalPressed && control._paintHovered))
-                return control.isThemeDark ? Qt.lighter(control.hoverColor, 1.2)
-                                           : Qt.darker(control.hoverColor, 1.2)
-
-            if (control._paintHovered)
-                return control.hoverColor
-
-            return "transparent"
-        }
-    }
+    background: Item {}
 
     contentItem: Item {
-        Widgets.IconLabel {
-            id: icon
+        Rectangle {
+            id: dot
+
             anchors.centerIn: parent
-            text: control.iconTxt
+            width: control.dotSize
+            height: control.dotSize
+            radius: width / 2
 
-            font.family:{
-                if (MainCtx.osName === MainCtx.Windows)
-                {
-                    if(MainCtx.osVersion === 10)
-                        return "Segoe MDL2 Assets"
+            color: (control.pressed || control.externalPressed)
+                   ? Qt.darker(control.dotColor, 1.25)
+                   : control.dotColor
 
-                    else if(MainCtx.osVersion >= 11)
-                        return "Segoe Fluent Icons"
-                }
-     
-                return VLCIcons.fontFamily
+            // A hairline keeps the dots legible on backgrounds close to their
+            // own colour (Mono Red, Grass, Borland...).
+            border.width: 1
+            border.color: control.isThemeDark ? Qt.rgba(0, 0, 0, 0.22)
+                                              : Qt.rgba(0, 0, 0, 0.14)
+
+            Behavior on color {
+                ColorAnimation { duration: 75 }
             }
 
-            font.pixelSize: VLCStyle.icon_CSD
-            color: control.color
+            Widgets.IconLabel {
+                anchors.centerIn: parent
+                text: control.iconTxt
+
+                font.family: VLCIcons.fontFamily
+                font.pixelSize: Math.round(control.dotSize * 0.62)
+
+                // Glyphs are dark so they read against the bright dot fills.
+                color: Qt.rgba(0, 0, 0, 0.62)
+
+                opacity: control._paintHovered ? 1.0 : 0.0
+                visible: opacity > 0
+
+                Behavior on opacity {
+                    NumberAnimation { duration: 75 }
+                }
+            }
         }
     }
 }

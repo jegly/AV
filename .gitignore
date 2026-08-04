@@ -63,3 +63,11 @@ static-lib/
 !buildsystem/
 !build.rs
 !extras/package/apple/build.sh
+
+# Medea/AV build artifacts (generated, not source)
+/contrib/native/
+/contrib/tmp/
+/parts/
+/stage/
+/prime/
+/debbuild/

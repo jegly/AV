@@ -18,6 +18,7 @@
 
 #include "firstrunwizard.hpp"
 #include "util/color_scheme_model.hpp"
+#include "style/medeapalettes.hpp"
 #include "maininterface/mainctx.hpp"
 #include "dialogs/toolbar/controlbar_profile_model.hpp"
 #include "medialibrary/medialib.hpp"
@@ -25,6 +26,8 @@
 #include <QPushButton>
 #include <QButtonGroup>
 #include <QFileDialog>
+#include <QComboBox>
+#include <QLabel>
 
 #include <vlc_common.h>
 #include <vlc_configuration.h>
@@ -48,28 +51,54 @@ FirstRunWizard::FirstRunWizard( qt_intf_t *_p_intf, QWidget *parent)
     ui.setupUi( this );
 
     /* Set the privacy and network policy */
-    ui.policy->setHtml( qtr( "<p>In order to protect your privacy, <i>VLC media player</i> "
-        "does <b>not</b> collect personal data or transmit them, "
-        "not even in anonymized form, to anyone."
+    ui.policy->setHtml( qtr( "<p><i>AV</i> does <b>not</b> collect personal "
+        "data, and does not transmit anything to anyone."
         "</p>\n"
-        "<p>Nevertheless, <i>VLC</i> is able to automatically retrieve "
-        "information about the media in your playlist from third party "
-        "Internet-based services. This includes cover art, track names, "
-        "artist names and other meta-data."
+        "<p>It also cannot. Every module capable of opening a network socket "
+        "is removed from the build, and the package does not request network "
+        "access, so it is denied by the system regardless of what the "
+        "application does."
         "</p>\n"
-        "<p>Consequently, this may entail identifying some of your media files to third party "
-        "entities. Therefore the <i>VLC</i> developers require your express "
-        "consent for the media player to access the Internet automatically."
+        "<p>This means cover art, track names and other metadata are never "
+        "fetched from Internet services. Only what is already in your files "
+        "is shown."
         "</p>\n" ) );
     ui.policy->setReadOnly( true );
 
     /* Set up the button group for colour schemes. */
     /* Creating in Qt Designer has unstable ordering when calling buttons() */
+    /* Medea has no System/Day/Night tri-state - it has a palette list. The
+     * wizard offers three starting points from that list; the rest are in
+     * preferences. IDs are resolved by key rather than hardcoded, so adding or
+     * reordering palettes cannot silently repoint these buttons. */
     colorSchemeGroup = new QButtonGroup( this );
-    colorSchemeGroup->addButton( ui.systemButton );
-    colorSchemeGroup->addButton( ui.lightButton );
-    colorSchemeGroup->addButton( ui.darkButton );
+    colorSchemeGroup->addButton( ui.systemButton, medea_palette_index( "ptyxis_nord" ) );
+    colorSchemeGroup->addButton( ui.lightButton, medea_palette_index( "ptyxis_kanagawa" ) );
+    colorSchemeGroup->addButton( ui.darkButton, medea_palette_index( "ptyxis_synthwave" ) );
     colorSchemeGroup->setExclusive( true );
+
+    /* The three radio buttons are only shortcuts. Medea ships 49 palettes and
+     * the Ptyxis set is the point of it, so the full list is offered here
+     * rather than being reachable only after first launch. */
+    paletteCombo = new QComboBox( this );
+    for( int i = 0; i < medea_palettes_count; i++ )
+        paletteCombo->addItem( QString::fromUtf8( medea_palettes[i].displayName ), i );
+
+    {
+        const int defaultIdx = medea_palette_index( MEDEA_DEFAULT );
+        if( defaultIdx >= 0 )
+            paletteCombo->setCurrentIndex( defaultIdx );
+    }
+
+    connect( paletteCombo, &QComboBox::currentIndexChanged, this, [this]( int row ) {
+        if( row < 0 || row >= medea_palettes_count )
+            return;
+        ui.explainerLabel->setText( qtr( "<i>AV will use the %1 theme.</i>" )
+                                    .arg( QString::fromUtf8( medea_palettes[row].displayName ) ) );
+    } );
+
+    ui.gridLayout_3->addWidget( new QLabel( qtr( "All themes:" ), this ), 4, 0 );
+    ui.gridLayout_3->addWidget( paletteCombo, 4, 1, 1, 2 );
 
     colorSchemeImages = new QButtonGroup( this );
     colorSchemeImages->addButton( ui.daynightImage );
@@ -139,11 +168,14 @@ void FirstRunWizard::finish()
     config_PutInt( "qt-privacy-ask", 0 );
 
     /* Colour Page settings */
-    p_intf->p_mi->getColorScheme()->setCurrentIndex( colorSchemeGroup->checkedId() );
+    p_intf->p_mi->getColorScheme()->setCurrentIndex(
+        paletteCombo ? paletteCombo->currentIndex() : 0 );
 
     /* Layout Page settings */
     config_PutInt( "qt-menubar", ui.layoutGroup->checkedId() );
-    config_PutInt( "qt-titlebar", ui.layoutGroup->checkedId() );
+    /* Medea always draws its own title bar so the window chrome follows the
+     * palette; the layout choice must not switch it back to the system one. */
+    config_PutInt( "qt-titlebar", 0 );
 
     config_PutInt( "qt-pin-controls", ui.layoutGroup->checkedId() );
 
@@ -199,18 +231,16 @@ void FirstRunWizard::MLaddNewFolder()
  */
 void FirstRunWizard::updateColorLabel( QAbstractButton* btn )
 {
-    switch ( colorSchemeGroup->id(btn) )
-    {
-        case ColorSchemeModel::System:
-            ui.explainerLabel->setText( qtr( "<i>VLC will automatically switch to dark mode accordingly with system settings</i>" ) );
-            break;
-        case ColorSchemeModel::Day:
-            ui.explainerLabel->setText( qtr( "<i>VLC will automatically use light mode</i>" ) );
-            break;
-        case ColorSchemeModel::Night:
-            ui.explainerLabel->setText( qtr( "<i>VLC will automatically use dark mode</i>" ) );
-            break;
-    }
+    const int idx = colorSchemeGroup->id( btn );
+    if ( idx < 0 || idx >= medea_palettes_count )
+        return;
+
+    if ( paletteCombo )
+        paletteCombo->setCurrentIndex( idx );
+
+    ui.explainerLabel->setText( qtr( "<i>AV will use the %1 theme. "
+                                     "More are available in Preferences.</i>" )
+                                .arg( QString::fromUtf8( medea_palettes[idx].displayName ) ) );
 }
 
 /**
@@ -222,10 +252,10 @@ void FirstRunWizard::updateLayoutLabel( QAbstractButton* btn )
     switch ( ui.layoutGroup->id( btn ) )
     {
         case MODERN:
-            ui.layoutExplainer->setText( qtr( "<i>VLC will use a modern layout with no menubar or pinned controls but with client-side decoration</i>" ) );
+            ui.layoutExplainer->setText( qtr( "<i>AV will use a modern layout with no menubar or pinned controls but with client-side decoration</i>" ) );
             break;
         case CLASSIC:
-            ui.layoutExplainer->setText( qtr( "<i>VLC will use a classic layout with a menubar and pinned controls but with no client-side decoration</i>" ) );
+            ui.layoutExplainer->setText( qtr( "<i>AV will use a classic layout with a menubar and pinned controls but with no client-side decoration</i>" ) );
             break;
     }
 }
@@ -287,21 +317,28 @@ void FirstRunWizard::initializePage( int id )
 {
     if(id == COLOR_SCHEME_PAGE)
     {
-        QVector<ColorSchemeModel::Item> schemes = p_intf->p_mi->getColorScheme()->getSchemes();
-        auto schemeButtons = colorSchemeGroup->buttons();
-        auto schemeImages = colorSchemeImages->buttons();
+        /* Medea exposes 49 palettes but the wizard only offers three starting
+         * points, so buttons are deliberately NOT 1:1 with the scheme list -
+         * the upstream assert on equal sizes cannot hold here. The IDs were
+         * already assigned by palette key in the constructor; this only puts
+         * the palette's display name on each button. */
+        const auto schemeButtons = colorSchemeGroup->buttons();
+        const auto schemeImages = colorSchemeImages->buttons();
 
-        /* Number of buttons should be equal to the schemes we can choose from */
-        assert( schemes.size() == schemeButtons.size() );
-        assert( schemes.size() == schemeImages.size() );
-
-        for( int i = 0; i < schemes.size(); i++ )
+        for( QAbstractButton *btn : schemeButtons )
         {
-            colorSchemeGroup->setId( schemeButtons.at(i), schemes.at(i).scheme );
-            colorSchemeImages->setId( schemeImages.at(i), schemes.at(i).scheme );
-            schemeButtons.at(i)->setText( schemes.at(i).text );
-            if( !i ) updateColorLabel( schemeButtons.at(i) );
+            const int idx = colorSchemeGroup->id( btn );
+            if( idx >= 0 && idx < medea_palettes_count )
+                btn->setText( QString::fromUtf8( medea_palettes[idx].displayName ) );
         }
+
+        /* Keep the decorative image buttons pointing at the same palettes. */
+        for( int i = 0; i < schemeImages.size() && i < schemeButtons.size(); i++ )
+            colorSchemeImages->setId( schemeImages.at(i),
+                                      colorSchemeGroup->id( schemeButtons.at(i) ) );
+
+        if( !schemeButtons.isEmpty() )
+            updateColorLabel( schemeButtons.first() );
     }
     else if ( id == FOLDER_PAGE )
         addDefaults();
@@ -322,7 +359,7 @@ void FirstRunWizard::reject()
     config_PutInt( "qt-privacy-ask", 0 );
 
     /* Colour Page settings */
-    p_intf->p_mi->getColorScheme()->setCurrentIndex( 0 );
+    p_intf->p_mi->getColorScheme()->setCurrentIndex( medea_palette_index( MEDEA_DEFAULT ) );
 
     /* Layout Page settings */
     config_PutInt( "qt-menubar", 0 );

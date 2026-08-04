@@ -28,14 +28,20 @@ import VLC.Style
 ViewBlockingRectangle {
     id: root
 
-    readonly property bool usingAcrylic: visible && enabled && AcrylicController.enabled
+    // Upstream painted this at alpha 0.7 and relied on the compositor blurring
+    // whatever sits behind the window. Most Linux compositors do not blur
+    // behind arbitrary windows, so instead of frosted glass you get a plainly
+    // see-through panel with the desktop showing through - and where the video
+    // surface does not cover the window, a transparent strip.
+    //
+    // Medea paints these surfaces opaque. Controlled translucency belongs to
+    // glass mode, which supplies its own backdrop blur rather than assuming
+    // the compositor provides one.
+    readonly property bool usingAcrylic: false
 
     property color tintColor: "gray"
 
     property color alternativeColor: tintColor
 
-    readonly property color _actualTintColor: tintColor.alpha(0.7)
-
-    color: root._actualTintColor.tint(Qt.alpha(root.alternativeColor,
-                                               1 - (usingAcrylic ? AcrylicController.uiTransluency : 0)))
+    color: root.alternativeColor
 }

@@ -151,12 +151,6 @@ vlc_modules += {
     'sources' : files('rawvideo.c')
 }
 
-# RTP video codec
-vlc_modules += {
-    'name' : 'rtpvideo',
-    'sources' : files('rtpvideo.c')
-}
-
 openapv_dep = dependency('oapv',
                               version: '>= 0.2',
                               required: get_option('openapv'))
@@ -165,12 +159,6 @@ vlc_modules += {
     'sources' : files('openapv.c'),
     'dependencies' : [openapv_dep],
     'enabled' : openapv_dep.found(),
-}
-
-# RTP Raw video codec
-vlc_modules += {
-    'name' : 'rtp_rawvid',
-    'sources' : files('rtp-rawvid.c')
 }
 
 ## Image codecs

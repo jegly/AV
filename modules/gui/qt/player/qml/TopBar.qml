@@ -266,7 +266,7 @@ FocusScope{
             visible: (root._showTopBar && root.resumeVisible === false)
 
             implicitHeight: VLCStyle.icon_banner + VLCStyle.margin_xxsmall * 2
-            implicitWidth: backBtn.implicitWidth + logo.implicitWidth + VLCStyle.margin_xxsmall
+            implicitWidth: backBtn.implicitWidth
 
             Widgets.IconToolButton {
                 id: backBtn
@@ -288,16 +288,6 @@ FocusScope{
                 onClicked: root.backRequested()
 
                 onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
-            }
-
-            Widgets.BannerCone {
-                id: logo
-
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.left: backBtn.right
-                anchors.leftMargin: VLCStyle.margin_xxsmall
-
-                color: theme.accent
             }
         }
 
@@ -384,7 +374,7 @@ FocusScope{
         enabled: visible
 
         topPadding: VLCStyle.margin_large
-        leftPadding: logo.x
+        leftPadding: backBtn.x
 
         text: root.title
         horizontalAlignment: Text.AlignLeft

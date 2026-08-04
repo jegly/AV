@@ -265,13 +265,8 @@ public:
             m_model.children.push_back(std::move(musicEntry));
         }
 
-        m_model.children.emplace_back(qtr("Browse"), "network", VLCIcons::topbar_network);
-
-        ModelEntry discoverEntry{ qtr("Discover"), "discover", VLCIcons::topbar_discover };
-        discoverEntry.children.emplace_back(qtr("Services"), "services");
-
-        discoverEntry.children.emplace_back(qtr("URL"), "url");
-        m_model.children.push_back(std::move(discoverEntry));
+        /* Medea has no Browse or Discover: both are network browsers and their
+         * views, models and QML were removed from the build. */
 
         m_model.visibleChildren = m_model.children.size();
     }

@@ -30,16 +30,12 @@
 Q_MOC_INCLUDE("playlist/playlist_controller.hpp")
 Q_MOC_INCLUDE("playlist/playlist_model.hpp")
 Q_MOC_INCLUDE("player/player_controller.hpp")
-Q_MOC_INCLUDE("network/networkdevicemodel.hpp")
-Q_MOC_INCLUDE("network/networkmediamodel.hpp")
 Q_MOC_INCLUDE("medialibrary/mlplaylistlistmodel.hpp")
 Q_MOC_INCLUDE("medialibrary/mlplaylistmodel.hpp")
 
 class MediaLib;
 class MLPlaylistListModel;
 class MLPlaylistModel;
-class NetworkDeviceModel;
-class NetworkMediaModel;
 class MainCtx;
 namespace vlc {
 namespace playlist {
@@ -431,34 +427,7 @@ signals:
     void showMediaInformation(int index);
 };
 
-class NetworkMediaContextMenu : public BasicMenuContainer {
-    Q_OBJECT
-    SIMPLE_MENU_PROPERTY(NetworkMediaModel*, model, nullptr)
-public:
-        using BasicMenuContainer::BasicMenuContainer;
 
-public slots:
-    void popup(const QModelIndexList& selected, QPoint pos );
-    void tableView_popup(int /*current*/, const QModelIndexList &selected, QPoint pos)
-    {
-        popup(selected, pos);
-    }
-};
-
-class NetworkDeviceContextMenu : public BasicMenuContainer {
-    Q_OBJECT
-    SIMPLE_MENU_PROPERTY(NetworkDeviceModel*, model, nullptr)
-public:
-    using BasicMenuContainer::BasicMenuContainer;
-
-public slots:
-    void popup(const QModelIndexList& selected, QPoint pos );
-    void tableView_popup(int /*current*/, const QModelIndexList &selected, QPoint pos)
-    {
-        popup(selected, pos);
-    }
-
-};
 
 class PlaylistContextMenu : public QObject {
     Q_OBJECT

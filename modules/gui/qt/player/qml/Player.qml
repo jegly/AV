@@ -262,10 +262,11 @@ FocusScope {
 
                     anchors.fill: parent
 
-                    // With regard to `ViewBlockingRectangle`, we
-                    // do not need to prevent painting anything
-                    // behind because there is already nothing
-                    // behind (unlike pip player):
+                    // The window surface is opaque in Medea (see
+                    // compositor_wayland.cpp), so this item has to actually
+                    // paint in order to punch the transparent hole the video
+                    // subsurface shows through. Upstream could leave this off
+                    // because the whole window was cleared transparent.
                     renderingEnabled: false
 
                     videoSurfaceProvider: MainCtx.videoSurfaceProvider
@@ -1328,12 +1329,14 @@ FocusScope {
             visible: !MainCtx.hasEmbededVideo || MainCtx.pinVideoControls || !rootPlayer.displayFadeRectangles
 
             opacity: {
+                // Only translucent when the bar genuinely floats *over* video -
+                // there is something behind it then. Docked or with no video,
+                // the window surface behind is transparent, so anything below 1
+                // shows the desktop through the controls.
                 if (MainCtx.hasEmbededVideo && !MainCtx.pinVideoControls && !rootPlayer.displayFadeRectangles) {
                     return 0.6
                 } else if ((Window.visibility === Window.FullScreen) && MainCtx.hasEmbededVideo) {
                     return MainCtx.pinOpacity
-                } else if (AcrylicController.enabled || !MainCtx.hasEmbededVideo) {
-                    return 0.7
                 } else {
                     return 1.0
                 }

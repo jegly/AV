@@ -50,6 +50,7 @@ private:
     qt_intf_t* p_intf;
     bool mlDefaults = false;
 
+    class QComboBox* paletteCombo = nullptr;
     QButtonGroup* colorSchemeGroup = nullptr;
     QButtonGroup* colorSchemeImages = nullptr;
     QButtonGroup* layoutImages = nullptr;

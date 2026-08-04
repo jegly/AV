@@ -36,7 +36,6 @@ import VLC.Player
 import VLC.Dialogs
 // import VLC.MediaLibrary
 import VLC.Menus
-import VLC.Network
 import VLC.PlayerControls
 
 Item {
@@ -49,6 +48,11 @@ Item {
     property bool _extendedFrameVisible: MainCtx.windowSuportExtendedFrame
                                       && MainCtx.clientSideDecoration
                                       && (MainCtx.intfMainWindow.visibility === Window.Windowed)
+
+    // NOTE: do not add an opaque backing rectangle here. Video is rendered
+    // *beneath* the QML scene and reaches the screen through a transparent
+    // hole in it; anything painted across the whole interface hides the video
+    // entirely. Panel translucency is dealt with in AcrylicBackground instead.
 
     Item {
         id: g_mainInterface

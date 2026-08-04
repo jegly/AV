@@ -63,12 +63,6 @@ vlc_modules += {
     'shortname' : 'a_imem',
 }
 
-# Fake sdp:// scheme input module
-vlc_modules += {
-    'name' : 'sdp',
-    'sources' : files('sdp.c')
-}
-
 # Timecode sub-picture generator module
 vlc_modules += {
     'name' : 'timecode',
@@ -209,17 +203,6 @@ if (get_option('linsys')
 endif
 
 live555_dep = dependency('live555', version: '>= 2011.12.23', required: get_option('live555'))
-# TODO support without pkg-config
-vlc_modules += {
-    'name' : 'live555',
-    'sources' : files('live555.cpp', 'live555_dtsgen.h',
-                      'mms/asf.c', 'mms/asf.h',
-                      'mms/buffer.c', 'mms/buffer.h',
-                      '../codec/opus_header.c', '../codec/opus_header.h'),
-    'dependencies' : [live555_dep, socket_libs],
-    'enabled' : live555_dep.found(),
-}
-
 # Shared memory frame buffer capture
 vlc_modules += {
     'name' : 'shm',
@@ -235,22 +218,12 @@ subdir('screen')
 # RDP/Remote Client Desktop capture
 freerdp_dep = dependency('freerdp2', required: get_option('freerdp'))
 if freerdp_dep.found()
-    vlc_modules += {
-    'name' : 'rdp',
-    'sources' : files('rdp.c'),
-    'dependencies' : [freerdp_dep]
-    }
-endif
+    endif
 
 # VNC capture
 vncclient_dep = dependency('libvncclient', required: get_option('vnc'))
 if vncclient_dep.found()
-    vlc_modules += {
-    'name' : 'vnc',
-    'sources' : files('vnc.c'),
-    'dependencies' : [vncclient_dep]
-    }
-endif
+    endif
 
 
 ## Optical media
@@ -280,19 +253,7 @@ if get_option('vcd_module')
             vcd_cdda_darwin_deps = [iokit_dep, corefoundation_dep]
         endif
 
-        vlc_modules += {
-            'name' : 'cdda',
-            'sources' : files(
-                'cdda.c',
-                'vcd/cdrom.c',
-                '../misc/webservices/musicbrainz.c',
-            ),
-            'c_args' : vcd_cdda_flags,
-            'link_with' : vlc_json_lib,
-            'dependencies' : [vcd_cdda_darwin_deps, gcrypt_dep]
-        }
-
-        vlc_modules += {
+                vlc_modules += {
             'name' : 'vcd',
             'sources' : files(
                 'vcd/vcd.c',
@@ -412,77 +373,12 @@ vlc_access_cache_lib = static_library(
 
 # Smb v1
 libdsm_dep = dependency('libdsm', version: '>= 0.2.0', required: get_option('dsm'))
-vlc_modules += {
-    'name' : 'dsm',
-    'sources' : files('dsm/access.c', 'dsm/sd.c', 'smb_common.h'),
-    'dependencies' : [libdsm_dep],
-    'link_with' : [vlc_access_cache_lib],
-    'enabled' : libdsm_dep.found(),
-}
-
-# FTP
-vlc_modules += {
-    'name' : 'ftp',
-    'sources' : files('ftp.c'),
-    'dependencies' : [socket_libs]
-}
-
 # SFTP
 libssh2_dep = dependency('libssh2', required: get_option('libssh2'))
-vlc_modules += {
-    'name' : 'sftp',
-    'sources' : files('sftp.c'),
-    'dependencies' : [libssh2_dep],
-    'enabled': libssh2_dep.found() and get_option('sftp').allowed(),
-}
-
-# Gopher
-vlc_modules += {
-    'name' : 'gopher',
-    'sources' : files('gopher.c'),
-    'dependencies' : [socket_libs]
-}
-
-# Old HTTP
-vlc_modules += {
-    'name' : 'http',
-    'sources' : files('http.c'),
-    'dependencies' : [socket_libs]
-}
-
 # New HTTP(S)
-subdir('http')
 
 # Network file sharing
 nfs_dep = dependency('libnfs', version: '>= 1.10.0', required: get_option('nfs'))
-vlc_modules += {
-    'name' : 'nfs',
-    'sources' : files('nfs.c'),
-    'dependencies' : [nfs_dep, socket_libs],
-    'enabled' : nfs_dep.found(),
-}
-
-# TCP
-vlc_modules += {
-    'name' : 'tcp',
-    'sources' : files('tcp.c'),
-    'dependencies' : [socket_libs]
-}
-
-# UDP
-vlc_modules += {
-    'name' : 'udp',
-    'sources' : files('udp.c'),
-    'dependencies' : [socket_libs]
-}
-
-# AMT
-vlc_modules += {
-    'name' : 'amt',
-    'sources' : files('amt.c'),
-    'dependencies' : [socket_libs]
-}
-
 # Windows UNC
 if host_system == 'windows' and not have_win_store
     mpr_lib = cc.find_library('mpr', required: true)
@@ -494,38 +390,6 @@ if host_system == 'windows' and not have_win_store
         'dependencies' : [mpr_lib, netapi32_lib]
     }
 endif
-
-# AVIO access module
-if avformat_dep.found()
-    vlc_modules += {
-        'name' : 'avio',
-        'sources' : files('avio.c'),
-        'dependencies' : [avutil_dep, avformat_dep, m_lib],
-        'link_args' : symbolic_linkargs,
-        'enabled' : not get_option('merge-ffmpeg')
-    }
-endif
-
-# SAT>IP
-vlc_modules += {
-    'name' : 'satip',
-    'sources' : files('satip.c'),
-    'dependencies' : [socket_libs, threads_dep]
-}
-
-# MMS
-vlc_modules += {
-    'name' : 'access_mms',
-    'sources' : files(
-        'mms/mms.c',
-        'mms/mmsh.c',
-        'mms/mmstu.c',
-        'mms/buffer.c',
-        'mms/asf.c',
-    ),
-    'dependencies' : [socket_libs],
-    'shortname' : 'a_mms',
-}
 
 ## Misc
 
@@ -557,12 +421,7 @@ endif
 
 # RIST
 if librist_dep.found()
-    vlc_modules += {
-        'name' : 'rist',
-        'sources' : files('rist.c'),
-        'dependencies' : [socket_libs, librist_dep]
-    }
-endif
+    endif
 
 # DCP
 asdcp_dep = dependency('asdcplib', required: get_option('asdcplib'))
@@ -583,4 +442,3 @@ vlc_modules += {
 }
 
 # RTP
-subdir('rtp')

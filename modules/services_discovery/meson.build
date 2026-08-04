@@ -1,32 +1,13 @@
-# Podcast
-vlc_modules += {
-    'name' : 'podcast',
-    'sources' : files('podcast.c'),
-    'dependencies' : [threads_dep]
-}
-
 # Radio
 vlc_modules += {
     'name' : 'radio',
     'sources' : files('radio.c'),
 }
 
-# SAP
-vlc_modules += {
-    'name' : 'sap',
-    'sources' : files('sap.c', '../access/rtp/sdp.c'),
-    'dependencies' : [socket_libs, z_dep]
-}
-
 # Zeroconf services discovery
 avahi_dep = dependency('avahi-client', version: '>= 0.6', required: get_option('avahi'))
 if avahi_dep.found()
-    vlc_modules += {
-        'name' : 'avahi',
-        'sources' : files('avahi.c'),
-        'dependencies' : [avahi_dep]
-    }
-endif
+    endif
 
 # MTP devices support
 mtp_dep = dependency('libmtp', version: '>= 1.0.0', required: get_option('mtp'))
@@ -78,12 +59,7 @@ if upnp_dep.found()
         )
     endif
 
-    vlc_modules += {
-        'name' : 'upnp',
-        'sources' : upnp_sources,
-        'dependencies' : [contrib_dep, upnp_dep, upnp_darwin_deps],
-    }
-endif
+    endif
 
 # PipeWire device list
 vlc_modules += {
@@ -147,19 +123,8 @@ endif
 # mDNS using libmicrodns
 microdns_dep = dependency('microdns', required: get_option('microdns'))
 if microdns_dep.found()
-    vlc_modules += {
-        'name' : 'microdns',
-        'sources' : files('microdns.c'),
-        'dependencies' : [microdns_dep, socket_libs]
-    }
-endif
+    endif
 
 # mDNS using Bonjour
 if host_system == 'darwin'
-    vlc_modules += {
-        'name' : 'bonjour',
-        'sources' : files('bonjour.m'),
-        'objc_args' : ['-fobjc-arc'],
-        'dependencies' : [foundation_dep]
-    }
-endif
+    endif

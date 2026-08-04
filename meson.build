@@ -1,10 +1,10 @@
-project('VLC', ['c', 'cpp'],
+project('Medea', ['c', 'cpp'],
     version: '4.0.0-dev',
     default_options: ['c_std=gnu17', 'cpp_std=c++17'],
     meson_version: '>=1.10.0')
 
 vlc_copyright_years = '1996-2026'
-vlc_version_codename = 'Otto Chriek'
+vlc_version_codename = 'Colchis'
 
 # LibVLC library (ABI) version
 # Format must be major.minor.micro
@@ -1025,7 +1025,7 @@ cdata.set_quoted('PACKAGE',             vlc_package_name)
 cdata.set_quoted('PACKAGE_NAME',        vlc_package_name)
 cdata.set_quoted('PACKAGE_STRING',      f'@vlc_package_name@ @vlc_version@')
 cdata.set_quoted('COPYRIGHT_YEARS',     vlc_copyright_years)
-cdata.set_quoted('COPYRIGHT_MESSAGE',   f'Copyright © @vlc_copyright_years@ the VideoLAN team')
+cdata.set_quoted('COPYRIGHT_MESSAGE',   f'Copyright © @vlc_copyright_years@ the VideoLAN team and Medea contributors')
 
 # Compiler and build system info
 cdata.set_quoted('VLC_COMPILER',        cc.get_id() + ' ' + cc.version())
@@ -1152,6 +1152,8 @@ subdir('modules')
 
 # VLC binaries
 subdir('bin')
+
+subdir('share')
 
 # Generate config.h
 configure_file(input: 'config.h.meson',

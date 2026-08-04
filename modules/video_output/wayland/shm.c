@@ -52,6 +52,24 @@ typedef struct vout_display_sys_t
     struct wp_viewporter *viewporter;
     struct wp_viewport *viewport;
 
+    /* Medea: display-sized scratch buffers used to pad the picture out to the
+     * full display area (see Prepare). This is a small rotating pool, not one
+     * shared buffer: a single shared buffer was overwritten with the next
+     * frame's pixels while the compositor could still be reading the previous
+     * one out of the exact same memory, which tore/glitched visibly (most
+     * noticeable on the audio-only "now playing" screen, which repaints its
+     * text every frame). Rotating across PAD_BUFFER_COUNT independent regions
+     * gives the compositor time to finish with slot N-1 while we write slot N,
+     * the same reason the ordinary (non-padded) path already cycles across
+     * MAX_PICTURES separate picture buffers instead of reusing one. */
+    struct wl_shm_pool *pad_pool;
+    void *pad_map;
+    size_t pad_frame_size;  /* bytes per slot */
+    unsigned pad_slot;      /* next slot to write, round-robin */
+    unsigned pad_width;
+    unsigned pad_height;
+    int pad_fd;
+
     size_t active_buffers;
 } vout_display_sys_t;
 
@@ -79,6 +97,75 @@ static const struct wl_buffer_listener buffer_cbs =
     buffer_release_cb,
 };
 
+/* Medea: (re)allocate the rotating padding buffer pool for a given display
+ * size. Allocates MAX_PICTURES independent slots inside one mmap/pool so
+ * consecutive frames never share backing memory (see the struct comment). */
+static int PadEnsure(vout_display_t *vd, unsigned width, unsigned height)
+{
+    vout_display_sys_t *sys = vd->sys;
+
+    if (sys->pad_map != NULL
+     && sys->pad_width == width && sys->pad_height == height)
+        return VLC_SUCCESS;
+
+    if (sys->pad_pool != NULL)
+    {
+        wl_shm_pool_destroy(sys->pad_pool);
+        sys->pad_pool = NULL;
+    }
+    if (sys->pad_map != NULL)
+    {
+        munmap(sys->pad_map, sys->pad_frame_size * MAX_PICTURES);
+        sys->pad_map = NULL;
+    }
+    if (sys->pad_fd != -1)
+    {
+        vlc_close(sys->pad_fd);
+        sys->pad_fd = -1;
+    }
+
+    if (width == 0 || height == 0)
+        return VLC_EGENERIC;
+
+    const size_t stride = (size_t)width * 4;
+    const size_t frameSize = stride * height;
+    const size_t totalSize = frameSize * MAX_PICTURES;
+
+    int fd = vlc_memfd();
+    if (fd == -1)
+        return VLC_EGENERIC;
+
+    if (ftruncate(fd, totalSize) < 0)
+    {
+        vlc_close(fd);
+        return VLC_EGENERIC;
+    }
+
+    void *map = mmap(NULL, totalSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (map == MAP_FAILED)
+    {
+        vlc_close(fd);
+        return VLC_EGENERIC;
+    }
+
+    struct wl_shm_pool *pool = wl_shm_create_pool(sys->shm, fd, totalSize);
+    if (pool == NULL)
+    {
+        munmap(map, totalSize);
+        vlc_close(fd);
+        return VLC_EGENERIC;
+    }
+
+    sys->pad_fd = fd;
+    sys->pad_map = map;
+    sys->pad_frame_size = frameSize;
+    sys->pad_slot = 0;
+    sys->pad_pool = pool;
+    sys->pad_width = width;
+    sys->pad_height = height;
+    return VLC_SUCCESS;
+}
+
 static void Prepare(vout_display_t *vd, picture_t *pic,
                     const struct vlc_render_subpicture *subpic,
                     vlc_tick_t date)
@@ -104,6 +191,70 @@ static void Prepare(vout_display_t *vd, picture_t *pic,
     const size_t size = pic->p->i_lines * stride;
     struct wl_shm_pool *pool;
     struct wl_buffer *buf;
+
+    /* Medea: upstream attached a buffer covering only the video rectangle and
+     * then damaged the whole display area. Every pixel outside the video had no
+     * buffer content at all, so it composited as fully transparent - the
+     * desktop showed through beside pillarboxed video, during resizes, and
+     * anywhere the interface was not painting over it.
+     *
+     * When the placed video does not cover the display, render into a
+     * display-sized buffer instead and clear the surround. WL_SHM_FORMAT_XRGB8888
+     * carries no alpha, so a zeroed buffer is opaque black rather than
+     * see-through. The extra copy only happens in the software path, which is
+     * already doing a full swscale conversion per frame. */
+    const unsigned dispW = vd->cfg->display.width;
+    const unsigned dispH = vd->cfg->display.height;
+    const unsigned vidW = vd->fmt->i_visible_width;
+    const unsigned vidH = vd->fmt->i_visible_height;
+    const bool needPad = (sys->viewport == NULL)
+                      && (vidW < dispW || vidH < dispH)
+                      && dispW > 0 && dispH > 0;
+
+    if (needPad && PadEnsure(vd, dispW, dispH) == VLC_SUCCESS)
+    {
+        const size_t dstStride = (size_t)dispW * 4;
+
+        /* Round-robin slot: never write into the memory backing a buffer that
+         * may still be attached/being read by the compositor. See the struct
+         * comment for why a single shared buffer glitched. */
+        const unsigned slot = sys->pad_slot;
+        sys->pad_slot = (slot + 1) % MAX_PICTURES;
+        const off_t slotOffset = (off_t)slot * sys->pad_frame_size;
+        uint8_t *const slotBase = (uint8_t *)sys->pad_map + slotOffset;
+
+        memset(slotBase, 0, sys->pad_frame_size); /* opaque black */
+
+        const uint8_t *src = (const uint8_t *)picbuf->base + picbuf->offset
+                           + 4 * vd->fmt->i_x_offset
+                           + stride * vd->fmt->i_y_offset;
+
+        /* Centre the picture the same way vout placed it. */
+        const unsigned dstX = (dispW > vidW) ? ((dispW - vidW) / 2) : 0;
+        const unsigned dstY = (dispH > vidH) ? ((dispH - vidH) / 2) : 0;
+        uint8_t *dst = slotBase + dstY * dstStride + dstX * 4;
+
+        const size_t rowBytes = (size_t)vidW * 4;
+        for (unsigned y = 0; y < vidH; y++)
+            memcpy(dst + y * dstStride, src + (size_t)y * stride, rowBytes);
+
+        buf = wl_shm_pool_create_buffer(sys->pad_pool, slotOffset, dispW, dispH,
+                                        dstStride, WL_SHM_FORMAT_XRGB8888);
+        if (buf == NULL)
+        {
+            free(d);
+            return;
+        }
+
+        picture_Hold(pic);
+        wl_buffer_add_listener(buf, &buffer_cbs, d);
+        wl_surface_attach(surface, buf, 0, 0);
+        wl_surface_damage(surface, 0, 0, dispW, dispH);
+        wl_display_flush(display);
+        sys->active_buffers++;
+        (void) subpic;
+        return;
+    }
 
     pool = wl_shm_create_pool(sys->shm, picbuf->fd, offset + size);
     if (pool == NULL)
@@ -245,6 +396,13 @@ static void Close(vout_display_t *vd)
     }
     msg_Dbg(vd, "no active buffers left");
 
+    if (sys->pad_pool != NULL)
+        wl_shm_pool_destroy(sys->pad_pool);
+    if (sys->pad_map != NULL)
+        munmap(sys->pad_map, sys->pad_frame_size * MAX_PICTURES);
+    if (sys->pad_fd != -1)
+        vlc_close(sys->pad_fd);
+
     if (sys->viewport != NULL)
         wp_viewport_destroy(sys->viewport);
     if (sys->viewporter != NULL)
@@ -281,6 +439,13 @@ static int Open(vout_display_t *vd,
     sys->eventq = NULL;
     sys->shm = NULL;
     sys->active_buffers = 0;
+    sys->pad_pool = NULL;
+    sys->pad_map = NULL;
+    sys->pad_frame_size = 0;
+    sys->pad_slot = 0;
+    sys->pad_width = 0;
+    sys->pad_height = 0;
+    sys->pad_fd = -1;
 
     /* Get window */
     sys->embed = vd->cfg->window;
@@ -309,10 +474,29 @@ static int Open(vout_display_t *vd,
     wl_display_roundtrip_queue(display, sys->eventq);
 
     struct wl_surface *surface = sys->embed->handle.wl;
-    if (sys->viewporter != NULL)
-        sys->viewport = wp_viewporter_get_viewport(sys->viewporter, surface);
-    else
-        sys->viewport = NULL;
+
+    /* Medea: never take the compositor's scaling path here.
+     *
+     * When wp_viewporter is available, this module lets the compositor scale
+     * the picture buffer up to vd->place (compositor-side scale, cheap) and
+     * the subsurface is sized to exactly that placed rectangle - it does not
+     * cover the rest of the display. Nothing else fills in the surrounding
+     * area (the Wayland main surface is intentionally transparent so the
+     * embedded video shows through it), so the letterbox/pillarbox bars, the
+     * region during an interactive resize, and any area the UI briefly stops
+     * painting are left with no buffer content at all and composite as the
+     * desktop showing through.
+     *
+     * Forcing sys->viewport to stay NULL routes through the module's other,
+     * already-existing code path (see UpdateViewport(), ResetPictures()):
+     * core pre-scales pictures to the placed size via the normal filter
+     * chain, and Prepare() below pads that placed picture out to the full
+     * display size and clears the surround to opaque black. This is the same
+     * fallback this module already uses on compositors that lack
+     * wp_viewporter; it is simply never skipped now. sys->viewporter itself
+     * is still bound above and torn down in Close() - it is just never used
+     * to create a viewport object. */
+    sys->viewport = NULL;
 
     /* Determine our pixel format */
     static const enum wl_output_transform transforms[8] = {

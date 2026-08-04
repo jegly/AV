@@ -183,12 +183,6 @@ void VLCMenuBar::FileMenu(qt_intf_t *p_intf, QMenu *menu)
         ":/menu/file.svg", &DialogsProvider::openFileDialog, "Ctrl+Shift+O" );
     addDPStaticEntry( menu, qfut( I_OP_OPDIR ),
         ":/menu/folder.svg", &DialogsProvider::PLOpenDir, "Ctrl+F" );
-    addDPStaticEntry( menu, qtr( "Open &Disc..." ),
-        ":/menu/disc.svg", &DialogsProvider::openDiscDialog, "Ctrl+D" );
-    addDPStaticEntry( menu, qtr( "Open &Network Stream..." ),
-        ":/menu/network.svg", &DialogsProvider::openNetDialog, "Ctrl+N" );
-    addDPStaticEntry( menu, qtr( "Open &Capture Device..." ),
-        ":/menu/capture-card.svg", &DialogsProvider::openCaptureDialog, "Ctrl+C" );
 
     addDPStaticEntry( menu, qtr( "Open &Location from clipboard" ),
                       NULL, &DialogsProvider::openUrlDialog, "Ctrl+V" );
@@ -263,8 +257,6 @@ void VLCMenuBar::ToolsMenu( qt_intf_t *p_intf, QMenu *menu )
     addDPStaticEntry( menu, qfut( I_MENU_MSG ),
         ":/menu/messages.svg", &DialogsProvider::messagesDialog, "Ctrl+M" );
 
-    addDPStaticEntry( menu, qtr( "Plu&gins and extensions" ),
-        "", &DialogsProvider::pluginDialog );
     menu->addSeparator();
 
     if( !p_intf->b_isDialogProvider )
@@ -689,12 +681,6 @@ void VLCMenuBar::PopupMenuStaticEntries( QMenu *menu )
         ":/menu/file.svg", &DialogsProvider::openFileDialog);
     addDPStaticEntry( openmenu, qfut( I_OP_OPDIR ),
         ":/menu/folder.svg", &DialogsProvider::PLOpenDir);
-    addDPStaticEntry( openmenu, qtr( "Open &Disc..." ),
-        ":/menu/disc.svg", &DialogsProvider::openDiscDialog);
-    addDPStaticEntry( openmenu, qtr( "Open &Network..." ),
-        ":/menu/network.svg", &DialogsProvider::openNetDialog);
-    addDPStaticEntry( openmenu, qtr( "Open &Capture Device..." ),
-        ":/menu/capture-card.svg", &DialogsProvider::openCaptureDialog);
     menu->addMenu( openmenu );
 
     menu->addSeparator();

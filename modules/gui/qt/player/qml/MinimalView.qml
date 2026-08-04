@@ -95,9 +95,8 @@ FocusScope {
         Image {
             id: logo
 
-            source: MainCtx.useXmasCone()
-                    ? "qrc:///logo/vlc48-xmas.png"
-                    : "qrc:///misc/cone.svg"
+            // Medea's mark, not VideoLAN's cone - see BannerCone.qml.
+            source: "qrc:///logo/medea.svg"
 
             anchors.centerIn: parent
             width: Math.min(parent.width / 2, sourceSize.width)

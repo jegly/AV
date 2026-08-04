@@ -141,13 +141,6 @@ vlc_modules += {
     'sources' : files('yuv.c')
 }
 
-# Flaschen video output
-vlc_modules += {
-    'name' : 'flaschen',
-    'sources' : files('flaschen.c'),
-    'dependencies' : [socket_libs]
-}
-
 # vmem
 vlc_modules += {
     'name' : 'vmem',

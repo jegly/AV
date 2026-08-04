@@ -80,7 +80,7 @@ bool config_IsSafe (const char *);
 char *config_GetLibDir(void) VLC_USED VLC_MALLOC;
 
 /* The configuration file */
-#define CONFIG_FILE                     "vlcrc"
+#define CONFIG_FILE                     "medearc"
 
 char *platform_GetUserDir( vlc_userdir_t ) VLC_USED VLC_MALLOC;
 

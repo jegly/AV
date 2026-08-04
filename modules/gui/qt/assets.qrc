@@ -1,14 +1,10 @@
 <RCC>
+    <!-- VideoLAN's cone artwork (vlc*.png, xmas/aprilfools/kb variants) and
+         pixmaps/misc/cone.svg are deliberately not bundled here. Medea is an
+         independent fork and does not ship VideoLAN's trademarked mark. -->
     <qresource prefix="/logo">
-        <file alias="vlc256.png">../../../share/icons/256x256/vlc.png</file>
-        <file alias="vlc128.png">../../../share/icons/128x128/vlc.png</file>
-        <file alias="vlc16.png">../../../share/icons/16x16/vlc.png</file>
-        <file alias="vlc48.png">../../../share/icons/48x48/vlc.png</file>
-        <file alias="vlc128-xmas.png">../../../share/icons/128x128/vlc-xmas.png</file>
-        <file alias="vlc48-xmas.png">../../../share/icons/48x48/vlc-xmas.png</file>
-        <file alias="vlc128-aprilfools.png">../../../share/icons/128x128/vlc-aprilfools.png</file>
-        <file alias="vlc48-aprilfools.png">../../../share/icons/48x48/vlc-aprilfools.png</file>
-        <file alias="vlc128-kb.png">../../../share/icons/128x128/vlc-kb.png</file>
+        <file alias="medea.svg">../../../share/icons/medea.svg</file>
+        <file alias="DotGothic16-Regular.ttf">../../../share/fonts/DotGothic16-Regular.ttf</file>
     </qresource>
     <qresource prefix="/icons">
         <file alias="atob.svg">pixmaps/icons/atob.svg</file>
@@ -60,11 +56,7 @@
         <file alias="volume-muted.svg">pixmaps/menu/volume-muted.svg</file>
     </qresource>
     <qresource prefix="/misc">
-        <file alias="cone.svg">pixmaps/misc/cone.svg</file>
         <file alias="new_indicator.svg">pixmaps/misc/new_indicator.svg</file>
-        <file alias="theme_dark.svg">pixmaps/misc/theme_dark.svg</file>
-        <file alias="theme_daynight.svg">pixmaps/misc/theme_daynight.svg</file>
-        <file alias="theme_light.svg">pixmaps/misc/theme_light.svg</file>
         <file alias="wait1.svg">pixmaps/misc/wait1.svg</file>
         <file alias="wait2.svg">pixmaps/misc/wait2.svg</file>
         <file alias="wait3.svg">pixmaps/misc/wait3.svg</file>

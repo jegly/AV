@@ -19,6 +19,8 @@
 #include "systray.hpp"
 
 #include <QImageReader>
+#include <QPixmap>
+#include <QIcon>
 
 #include "maininterface/mainctx.hpp"
 #include "menus/menus.hpp"
@@ -39,17 +41,37 @@ VLCSystray::VLCSystray(MainCtx* ctx, QObject* parent)
 
     m_notificationSetting = var_InheritInteger(m_intf, "qt-notification");
 
-    QIcon iconVLC;
-    if( m_ctx->useXmasCone() )
-        iconVLC = QIcon::fromTheme( "vlc-xmas", QIcon( ":/logo/vlc128-xmas.png" ) );
-    else
-        iconVLC = QIcon::fromTheme( "vlc", QIcon( ":/logo/vlc256.png" ) );
+    /* StatusNotifierItem hands the host shell either an icon *name* to resolve
+     * against its own theme, or serialised pixmap data. A name only works if
+     * medea.svg is installed in a system icon theme, which is not the case for
+     * an uninstalled/staged build or inside a snap - the host then shows a
+     * placeholder ("..." on GNOME).
+     *
+     * Building the icon from explicit pixmaps forces Qt to send the image data
+     * itself, so the tray renders correctly regardless of the host's theme. */
+    QIcon iconMedea = QIcon::fromTheme( QStringLiteral( "medea" ) );
 
-    setIcon(iconVLC);
-    setToolTip( qtr( "VLC media player" ));
+    if( iconMedea.isNull() || iconMedea.availableSizes().isEmpty() )
+    {
+        iconMedea = QIcon();
+        const QIcon source( QStringLiteral( ":/logo/medea.svg" ) );
+        for( int size : { 16, 22, 24, 32, 48, 64, 128, 256 } )
+        {
+            const QPixmap pm = source.pixmap( QSize( size, size ) );
+            if( !pm.isNull() )
+                iconMedea.addPixmap( pm );
+        }
 
-    m_menu = std::make_unique<VLCMenu>( qtr( "VLC media player"), m_intf );
-    m_menu->setIcon( iconVLC );
+        if( iconMedea.availableSizes().isEmpty() )
+            msg_Warn( m_intf, "could not build the Medea tray icon from "
+                              ":/logo/medea.svg" );
+    }
+
+    setIcon( iconMedea );
+    setToolTip( qtr( "AV" ));
+
+    m_menu = std::make_unique<VLCMenu>( qtr( "AV"), m_intf );
+    m_menu->setIcon( iconMedea );
     setContextMenu(m_menu.get());
     update();
     show();
@@ -118,7 +140,7 @@ void VLCSystray::updateTooltipName( const QString& name )
 {
     if( name.isEmpty() )
     {
-        setToolTip( qtr( "VLC media player" ) );
+        setToolTip( qtr( "AV" ) );
     }
     else
     {
@@ -128,7 +150,7 @@ void VLCSystray::updateTooltipName( const QString& name )
             ( m_notificationSetting == NOTIFICATION_MINIMIZED && (windowVisiblity == QWindow::Hidden || windowVisiblity == QWindow::Minimized)))
         {
             const auto showMessageTemplate = [this, &name](const auto &icon) {
-                showMessage( qtr( "VLC media player" ), name, icon, 3000 );
+                showMessage( qtr( "AV" ), name, icon, 3000 );
             };
 
             assert(m_intf);
@@ -175,13 +197,13 @@ void VLCSystray::update()
     if( m_ctx->interfaceVisibility() != QWindow::Hidden )
     {
         m_menu->addAction(
-            QIcon( ":/logo/vlc16.png" ), qtr( "&Hide VLC media player in taskbar" ),
+            QIcon( ":/logo/medea.svg" ), qtr( "&Hide AV in taskbar" ),
             this, &VLCSystray::hideUpdateMenu);
     }
     else
     {
         m_menu->addAction(
-            QIcon( ":/logo/vlc16.png" ), qtr( "Sho&w VLC media player" ),
+            QIcon( ":/logo/medea.svg" ), qtr( "Sho&w AV" ),
             this, &VLCSystray::showUpdateMenu);
     }
     m_menu->addSeparator();

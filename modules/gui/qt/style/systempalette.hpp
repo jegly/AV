@@ -32,6 +32,7 @@
 #include "qtthemeprovider.hpp"
 
 #include "colorcontext.hpp"
+#include "medeapalettes.hpp"
 
 class SystemPalette;
 class ColorProperty;
@@ -168,6 +169,7 @@ signals:
 private:
     void updatePalette();
 
+    void makeMedeaPalette(const MedeaPalette& p);
     void makeLightPalette();
     void makeDarkPalette();
     void makeSystemPalette();
@@ -175,7 +177,8 @@ private:
 private:
     MainCtx* m_ctx = nullptr;
 
-    ColorSchemeModel::ColorScheme m_source = ColorSchemeModel::ColorScheme::Day;
+    /* index into medea_palettes */
+    ColorSchemeModel::ColorScheme m_source = 0;
     bool m_isDark = false;
     bool m_hasCSDImage = false;
 

@@ -4,13 +4,6 @@ vlc_modules += {
     'sources' : files('stats.c')
 }
 
-# audioscrobbler module
-vlc_modules += {
-    'name' : 'audioscrobbler',
-    'sources' : files('audioscrobbler.c'),
-    'dependencies' : [threads_dep, socket_libs]
-}
-
 # export module
 vlc_modules += {
     'name' : 'export',
@@ -73,12 +66,7 @@ endif
 
 # Securetransport
 if host_system == 'darwin'
-    vlc_modules += {
-        'name' : 'securetransport',
-        'sources' : files('securetransport.c'),
-        'dependencies' : [security_dep, corefoundation_dep]
-    }
-endif
+    endif
 
 # GnuTLS module
 gnutls_dep = dependency('gnutls', version: '>= 3.5.0', required: get_option('gnutls'))
@@ -91,12 +79,7 @@ if gnutls_dep.found()
         gnutls_darwin_deps = [corefoundation_dep, security_dep]
     endif
 
-    vlc_modules += {
-        'name' : 'gnutls',
-        'sources' : files('gnutls.c'),
-        'dependencies' : [gnutls_dep, gnutls_darwin_deps]
-    }
-endif
+    endif
 
 # IOKit inhibit module (macOS only)
 if have_osx

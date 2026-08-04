@@ -246,7 +246,14 @@ AbstractButton {
 
                 Binding on visible {
                     delayed: true
-                    value: (infoColumn.height > infoColumn.implicitHeight) && (artistLabel.text.length > 0)
+                    // NOTE: Deliberately excludes artistLabel's own contribution to
+                    // infoColumn's implicitHeight - comparing against a quantity that
+                    // includes this binding's own output creates a feedback loop
+                    // (show -> implicitHeight grows -> condition flips -> hide -> ...),
+                    // which was visible as the title/artist text vibrating whenever
+                    // infoColumn's height sat near that self-referential boundary.
+                    value: (infoColumn.height > (titleLabel.implicitHeight + progressIndicator.implicitHeight))
+                           && (artistLabel.text.length > 0)
                 }
 
                 text: {

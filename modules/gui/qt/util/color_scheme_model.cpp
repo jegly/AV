@@ -19,10 +19,30 @@
 #include "color_scheme_model.hpp"
 
 #include "qt.hpp"
+#include "style/medeapalettes.hpp"
+
+namespace {
+
+/* m_list is const, so it has to be built before the member is initialised
+ * rather than filled in the constructor body.
+ *
+ * The palette names are proper nouns (Dracula, Kanagawa, Catppuccin Mocha...),
+ * so they are deliberately not run through qtr(). */
+QVector<ColorSchemeModel::Item> buildPaletteList()
+{
+    QVector<ColorSchemeModel::Item> list;
+    list.reserve(medea_palettes_count);
+    for (int i = 0; i < medea_palettes_count; ++i)
+        list.append(ColorSchemeModel::Item {
+            QString::fromUtf8(medea_palettes[i].displayName), i });
+    return list;
+}
+
+}
 
 ColorSchemeModel::ColorSchemeModel(QObject* parent)
     : QAbstractListModel(parent)
-    , m_list {{qtr("System"), ColorScheme::System}, {qtr("Day"), ColorScheme::Day}, {qtr("Night"), ColorScheme::Night}}
+    , m_list {buildPaletteList()}
     , m_currentIndex {0}
 {
 }

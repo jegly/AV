@@ -199,7 +199,5 @@ vlc_modules += {
 }
 
 # Chromecast module
-subdir('chromecast')
 
 # HLS module
-subdir('hls')

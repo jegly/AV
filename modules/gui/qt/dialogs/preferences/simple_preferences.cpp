@@ -724,9 +724,9 @@ SPrefsPanel::SPrefsPanel( qt_intf_t *_p_intf, QWidget *_parent,
 
 //            ui.defaultLabel->setFont( italicFont );
             ui.skinsLabel->setText(
-                    qtr( "This is VLC's skinnable interface. You can download other skins at" )
+                    qtr( "This is AV's skinnable interface. You can download other skins at" )
                     + QString( " <a href=\"https://www.videolan.org/vlc/skins.php\">" )
-                    + qtr( "VLC skins website" ) + QString( "</a>." ) );
+                    + qtr( "AV skins website" ) + QString( "</a>." ) );
             ui.skinsLabel->setFont( italicFont );
 
 #ifdef _WIN32
@@ -869,7 +869,9 @@ SPrefsPanel::SPrefsPanel( qt_intf_t *_p_intf, QWidget *_parent,
 
             QObject::connect( ui.toolbarEditor, &QAbstractButton::clicked, provider, &DialogsProvider::showToolbarEditorDialog);
 
-            configBool( "qt-titlebar", ui.titleBarCheckBox );
+            /* Medea always uses its own title bar; the toggle would be a
+             * no-op, so it is hidden rather than left lying to the user. */
+            ui.titleBarCheckBox->setVisible( false );
 
             /* UPDATE options */
 #ifdef UPDATE_CHECK

@@ -92,20 +92,24 @@ AboutDialog::AboutDialog( qt_intf_t *_p_intf)
     setWindowModality( Qt::WindowModal );
 
     ui.version->setText(qfu( " " VERSION_MESSAGE ) );
-    ui.title->setText("<html><head/><body><p><span style=\" font-size:26pt; color:#353535;\"> " + qtr( "VLC media player" ) + " </span></p></body></html>");
+    ui.title->setText("<html><head/><body><p><span style=\" font-size:26pt; color:#353535;\"> " + qtr( "AV" ) + " </span></p></body></html>");
 
     ui.MainBlabla->setText("<html><head/><body>" +
-    qtr( "<p>VLC media player is a free and open source media player, encoder, and streamer made by the volunteers of the <a href=\"https://www.videolan.org/\"><span style=\" text-decoration: underline; color:#0057ae;\">VideoLAN</span></a> community.</p><p>VLC uses its internal codecs, works on essentially every popular platform, and can read almost all files, CDs, DVDs, network streams, capture cards and other media formats!</p><p><a href=\"https://www.videolan.org/contribute/\"><span style=\" text-decoration: underline; color:#0057ae;\">Help and join us!</span></a>" ) +
-    "</p></body> </html>");
+    qtr( "<p><b>AV</b> is a local-only audio and video player. It plays "
+         "files from your own machine and nothing else: it does not stream, "
+         "cast, serve, browse network shares, fetch metadata, or check for "
+         "updates.</p>"
+         "<p>Every module capable of opening a network socket is removed from "
+         "the build, and the package does not request network access, so it is "
+         "denied by the operating system regardless of what the application "
+         "does.</p>"
+         "<p>AV is an independent fork of <a href=\"https://www.videolan.org/\">"
+         "<span style=\" text-decoration: underline; color:#0057ae;\">VLC</span></a>, "
+         "and is not affiliated with or endorsed by VideoLAN. VLC is free "
+         "software from the VideoLAN project, without which AV would not "
+         "exist.</p>" ) +
+    "</body></html>");
 
-    const QDate today = QDate::currentDate();
-    if( today.month() == 4 && today.day() == 1
-            && var_InheritBool( p_intf, "qt-icon-change" ) )
-        ui.VLCcone->setPixmap( QPixmap( ":/logo/vlc128-aprilfools.png" ) );
-
-    ui.update->hide();
-
-    /* GPL License */
     ui.licensePage->setText( qfu( psz_license ) );
 
     /* People who helped */
@@ -403,7 +407,7 @@ UpdateDialog::UpdateDialog( qt_intf_t *_p_intf ) : QVLCFrame( _p_intf )
     ui.updateNotifyButtonBox->addButton( new QPushButton( qtr("&No"), this ),
                                          QDialogButtonBox::RejectRole );
 
-    setWindowTitle( qtr( "VLC media player updates" ) );
+    setWindowTitle( qtr( "AV updates" ) );
     setWindowRole( "vlc-update" );
 
     BUTTONACT( recheckButton, &UpdateDialog::checkOrDownload );
@@ -482,7 +486,7 @@ void UpdateDialog::updateUI( )
         ui.stackedWidget->setCurrentWidget( ui.updateNotifyPage );
         int extra = m_model->getExtra();
         QString message = QString(
-                              qtr( "A new version of VLC (%1.%2.%3%4) is available." ) )
+                              qtr( "A new version of AV (%1.%2.%3%4) is available." ) )
                               .arg( m_model->getMajor() )
                               .arg( m_model->getMinor() )
                               .arg( m_model->getRevision()  )
@@ -505,7 +509,7 @@ void UpdateDialog::updateUI( )
     {
         ui.stackedWidget->setCurrentWidget( ui.updateDialogPage );
         ui.updateDialogLabel->setText(
-            qtr( "You have the latest version of VLC media player." ) );
+            qtr( "You have the latest version of AV." ) );
         break;
     }
     case UpdateModel::CheckFailed:

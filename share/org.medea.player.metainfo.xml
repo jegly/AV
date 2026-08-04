@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.medea.player</id>
+  <launchable type="desktop-id">medea.desktop</launchable>
+
+  <name>AV</name>
+  <summary>A local-only audio and video player</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+
+  <description>
+    <p>
+      AV plays audio and video files from your own machine. It does not
+      stream, cast, serve, discover devices, fetch metadata, check for updates,
+      or connect to a network at all.
+    </p>
+    <p>
+      That is enforced in two independent ways. Every module that opens a
+      socket is removed from the build, and the package does not request the
+      network interface, so access is denied by the kernel regardless of what
+      the code does.
+    </p>
+    <p>
+      AV is an independent fork of VLC, and is not affiliated with or
+      endorsed by VideoLAN.
+    </p>
+  </description>
+
+  <categories>
+    <category>AudioVideo</category>
+    <category>Player</category>
+  </categories>
+
+  <content_rating type="oars-1.1"/>
+</component>

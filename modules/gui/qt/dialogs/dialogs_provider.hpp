@@ -77,14 +77,12 @@ class FirstRunWizard;
 class ExtendedDialog;
 class MessagesDialog;
 class GotoTimeDialog;
-class VLMDialog;
 class HelpDialog;
 class AboutDialog;
 class MediaInfoDialog;
 class PlaylistsDialog;
 class BookmarksDialog;
 class PodcastConfigDialog;
-class PluginDialog;
 class EpgDialog;
 class UpdateDialog;
 class PrefsDialog;
@@ -109,13 +107,11 @@ public:
     Q_PROPERTY(bool extendedDialogVisible READ extendedDialogVisible NOTIFY extendedDialogVisibleChanged FINAL)
     Q_PROPERTY(bool messagesDialogVisible READ messagesDialogVisible NOTIFY messagesDialogVisibleChanged FINAL)
     Q_PROPERTY(bool gotoTimeDialogVisible READ gotoTimeDialogVisible NOTIFY gotoTimeDialogVisibleChanged FINAL)
-    Q_PROPERTY(bool vlmDialogVisible READ vlmDialogVisible NOTIFY vlmDialogVisibleChanged FINAL)
     Q_PROPERTY(bool helpDialogVisible READ helpDialogVisible NOTIFY helpDialogVisibleChanged FINAL)
     Q_PROPERTY(bool aboutDialogVisible READ aboutDialogVisible NOTIFY aboutDialogVisibleChanged FINAL)
     Q_PROPERTY(bool mediaInfoDialogVisible READ mediaInfoDialogVisible NOTIFY mediaInfoDialogVisibleChanged FINAL)
     Q_PROPERTY(bool bookmarkDialogVisible READ bookmarkDialogVisible NOTIFY bookmarkDialogVisibleChanged FINAL)
     Q_PROPERTY(bool podcastDialogVisible READ podcastDialogVisible NOTIFY podcastDialogVisibleChanged FINAL)
-    Q_PROPERTY(bool pluginDialogVisible READ pluginDialogVisible NOTIFY pluginDialogVisibleChanged FINAL)
     Q_PROPERTY(bool egpDialogVisible READ egpDialogVisible NOTIFY egpDialogVisibleChanged FINAL)
     Q_PROPERTY(bool prefsDialogVisible READ prefsDialogVisible NOTIFY prefsDialogVisibleChanged FINAL)
 #ifdef UPDATE_CHECK
@@ -176,13 +172,11 @@ private:
     std::unique_ptr<ExtendedDialog> m_extendedDialog;
     std::unique_ptr<MessagesDialog> m_messagesDialog;
     std::unique_ptr<GotoTimeDialog> m_gotoTimeDialog;
-    std::unique_ptr<VLMDialog> m_vlmDialog;
     std::unique_ptr<HelpDialog> m_helpDialog;
     std::unique_ptr<AboutDialog> m_aboutDialog;
     std::unique_ptr<MediaInfoDialog> m_mediaInfoDialog;
     std::unique_ptr<BookmarksDialog> m_bookmarkDialog;
     std::unique_ptr<PodcastConfigDialog> m_podcastDialog;
-    std::unique_ptr<PluginDialog> m_pluginDialog;
     std::unique_ptr<EpgDialog> m_egpDialog;
 #ifdef UPDATE_CHECK
     std::unique_ptr<UpdateDialog> m_updateDialog;
@@ -215,9 +209,6 @@ public slots:
     void synchroDialog();
     void messagesDialog( int page = 0 );
     void sendKey( int key );
-#ifdef ENABLE_VLM
-    void vlmDialog();
-#endif
     void helpDialog();
 #if defined(UPDATE_CHECK)
     void updateDialog(Mode mode = Toggle);
@@ -225,7 +216,6 @@ public slots:
     void aboutDialog();
     void gotoTimeDialog();
     void podcastConfigureDialog();
-    void pluginDialog();
     void epgDialog();
     void setPopupMenu();
     void destroyPopupMenu();
@@ -266,13 +256,11 @@ public:
     bool extendedDialogVisible() const;
     bool messagesDialogVisible() const;
     bool gotoTimeDialogVisible() const;
-    bool vlmDialogVisible() const;
     bool helpDialogVisible() const;
     bool aboutDialogVisible() const;
     bool mediaInfoDialogVisible() const;
     bool bookmarkDialogVisible() const;
     bool podcastDialogVisible() const;
-    bool pluginDialogVisible() const;
     bool egpDialogVisible() const;
     bool prefsDialogVisible() const;
 #ifdef UPDATE_CHECK
@@ -289,13 +277,11 @@ signals:
     void extendedDialogVisibleChanged();
     void messagesDialogVisibleChanged();
     void gotoTimeDialogVisibleChanged();
-    void vlmDialogVisibleChanged();
     void helpDialogVisibleChanged();
     void aboutDialogVisibleChanged();
     void mediaInfoDialogVisibleChanged();
     void bookmarkDialogVisibleChanged();
     void podcastDialogVisibleChanged();
-    void pluginDialogVisibleChanged();
     void egpDialogVisibleChanged();
     void prefsDialogVisibleChanged();
 #ifdef UPDATE_CHECK

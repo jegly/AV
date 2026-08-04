@@ -1,0 +1,262 @@
+name: medea
+adopt-info: medea
+grade: stable
+base: core26
+summary: A local-only audio and video player
+description: |
+  AV plays audio and video files from your own machine. It does not stream,
+  cast, serve, discover devices, fetch metadata, check for updates, or connect
+  to a network at all.
+
+  That is enforced twice over. Every module that opens a socket is left out of
+  the build, and this snap does not request the `network` interface, so snapd
+  denies network access in the kernel regardless of what the code does.
+
+  AV is a fork of VLC.
+confinement: strict
+compression: lzo
+
+# 64-bit Intel/AMD only. Medea is built with -march=x86-64-v3 (AVX2/BMI2/FMA,
+# Haswell 2013 and newer), so there is nothing to gain from building the other
+# architectures and a lot of CI time to lose.
+platforms:
+  amd64:
+
+plugs:
+  desktop:
+    mount-host-font-cache: false
+
+hooks:
+  configure:
+    plugs:
+      - desktop
+
+apps:
+  medea:
+    desktop: medea.desktop
+    command: usr/bin/medea-snap-wrapper.sh
+    # No kde-neon-6 here: `snapcraft extensions` confirms it supports only
+    # core22 and core24, not core26. Staying on core26 matters because it is
+    # the only base whose glibc matches this build host, which is what lets
+    # --destructive-mode work without LXD. Qt6 is therefore staged into the
+    # snap directly (see the qt6-runtime part) rather than mounted from a
+    # content snap.
+    extensions:
+      - gpu
+    environment:
+      QT_QPA_PLATFORM: xcb
+      QT_PLUGIN_PATH: $SNAP/usr/lib/x86_64-linux-gnu/qt6/plugins
+      QML2_IMPORT_PATH: $SNAP/usr/lib/x86_64-linux-gnu/qt6/qml
+    common-id: org.medea.player
+    plugs:
+      # Deliberately absent: network, network-bind, network-observe,
+      # avahi-control, avahi-observe. Their absence is the confinement half of
+      # Medea's no-network guarantee - do not add them back without removing
+      # that claim from the description above.
+      #
+      # Also absent: audio-record and camera (playback only), dvb and
+      # optical-drive (no tuner or disc support), mount-observe and udisks2
+      # (device enumeration), removable-media is kept so external drives work.
+      - audio-playback
+      - home
+      - removable-media
+      - screen-inhibit-control
+      - pipewire
+    slots:
+      - mpris
+
+parts:
+  medea:
+    source: .
+    source-type: git
+    plugin: nil
+
+    override-pull: |
+      craftctl default
+      craftctl set version=$(git describe --always HEAD)
+
+    override-build: |
+      export PATH=$PWD/extras/tools/build/bin:${PATH:-}
+      export LD_LIBRARY_PATH=$(pwd)/src/.libs/:$(pwd)/lib/.libs/:${LD_LIBRARY_PATH:-}
+
+      # /tmp may be mounted noexec on hardened hosts, which breaks ffmpeg's
+      # configure sanity check. Keep TMPDIR inside the build tree.
+      export TMPDIR="$PWD/contrib/tmp"
+      mkdir -p "$TMPDIR"
+
+      cd extras/tools
+      ./bootstrap
+      make -j ${CRAFT_PARALLEL_BUILD_COUNT} all
+      cd ../../
+
+      # Same three switches as the local build: no network, no stream output,
+      # no disc. They drop whole contrib packages, so this is also the single
+      # biggest saving in build time.
+      cd contrib && mkdir -p linux && cd linux
+      ../bootstrap \
+          --host=${CRAFT_ARCH_TRIPLET_BUILD_FOR} \
+          --disable-net \
+          --disable-sout \
+          --disable-disc
+      make list
+      make -j1 fetch
+      make -j ${CRAFT_PARALLEL_BUILD_COUNT}
+      cd ../..
+
+      extras/medea/configure-medea.sh build \
+          --prefix=/usr \
+          -Dmerge-ffmpeg=true
+      ninja -C build -j ${CRAFT_PARALLEL_BUILD_COUNT}
+      DESTDIR="${CRAFT_PART_INSTALL}" ninja -C build install
+
+      find ${CRAFT_PART_INSTALL}/usr/lib -name "*.la" -delete
+      find ${CRAFT_PART_INSTALL}/usr/lib -path "*/cmake/*" -delete
+      rm -rf ${CRAFT_PART_INSTALL}/usr/include
+      rm -rf ${CRAFT_PART_INSTALL}/usr/share/doc
+      rm -rf ${CRAFT_PART_INSTALL}/usr/share/man
+      rm -f ${CRAFT_PART_INSTALL}/usr/bin/X11
+
+      # The tray icon has to be resolvable by the host shell: StatusNotifierItem
+      # passes an icon *name* over D-Bus, and the host cannot read anything
+      # under $SNAP. Exporting it to the snap root is what makes it render.
+      install -Dm644 share/icons/medea.svg \
+          ${CRAFT_PART_INSTALL}/usr/share/icons/hicolor/scalable/apps/medea.svg
+      cp share/icons/medea.svg ${CRAFT_PART_INSTALL}/medea.svg
+      cp ${CRAFT_PART_INSTALL}/usr/share/applications/medea.desktop \
+          ${CRAFT_PART_INSTALL}/medea.desktop
+      sed -i 's|^Icon=.*|Icon=/medea.svg|' ${CRAFT_PART_INSTALL}/medea.desktop
+      sed -i 's|TryExec=.*|TryExec=/snap/bin/medea|' ${CRAFT_PART_INSTALL}/medea.desktop
+
+    build-packages:
+      - autoconf
+      - automake
+      - autopoint
+      - bison
+      - flex
+      - g++
+      - git
+      - gperf
+      - libtool
+      - libtool-bin
+      - make
+      - meson
+      - nasm
+      - ninja-build
+      - pkgconf
+      - python3
+      - ragel
+      - yasm
+      # Qt6 development packages: without kde-neon-6 there is no SDK snap
+      # providing these.
+      - qt6-base-dev
+      - qt6-base-private-dev
+      - qt6-declarative-dev
+      - qt6-declarative-private-dev
+      - qt6-svg-dev
+      - qt6-shadertools-dev
+      # platform headers contrib does not build
+      - libdrm-dev
+      - libpulse-dev
+      - libudev-dev
+      - libva-dev
+      - libvdpau-dev
+      - libwayland-dev
+      - libx11-dev
+      - libxcb1-dev
+      - libxkbcommon-dev
+      - wayland-protocols
+
+    stage-packages:
+      # Derived from `ldd` over the built binary and all 308 plugins, not
+      # guessed. Two things fall out of that:
+      #
+      #  * ffmpeg is NOT here. contrib links libavcodec/libavformat/libavutil
+      #    statically (ldd reports 0 dynamic references), so staging Ubuntu's
+      #    libav*60 would have shipped a second, older ffmpeg - 8.0.1, with no
+      #    security upload since Feb 2026 - beside our contrib 8.1.2.
+      #  * the same applies to dav1d, aom, vpx, theora, matroska, ass, taglib,
+      #    freetype, fribidi, samplerate, soxr and ebur128: all contrib-static.
+      #
+      # Also gone from upstream VLC's snap: openjdk-8-jdk (a whole JRE, for
+      # BluRay BD-J), plus the network, scripting, broadcast, disc and encoder
+      # libraries.
+      - dbus-x11
+      - fonts-freefont-ttf
+      - libasound2t64
+      - libdrm2
+      - libegl1
+      - libfontconfig1
+      - libgl1
+      - libglib2.0-0t64
+      - libglx0
+      - libharfbuzz0b
+      - libnotify4
+      - libpulse0
+      - libsqlite3-0
+      - libudev1
+      - libva-drm2
+      - libva-wayland2
+      - libva-x11-2
+      - libva2
+      - libvdpau1
+      - libvulkan1
+      - libwayland-client0
+      - libwayland-cursor0
+      - libwayland-egl1
+      - libx11-6
+      - libx11-xcb1
+      - libxcb-composite0
+      - libxcb-damage0
+      - libxcb-dri3-0
+      - libxcb-keysyms1
+      - libxcb-randr0
+      - libxcb1
+      - libxcomposite1
+      - libxcursor1
+      - libxext6
+      - libxfixes3
+      - libxi6
+      - libxinerama1
+      - libxkbcommon0
+      - libxkbcommon-x11-0
+      - libxrandr2
+      - zlib1g
+
+  # Qt6 6.10.2 from the Ubuntu 26.04 archive. This is what kde-neon-6 would
+  # have provided; it costs snap size but keeps us on a base with a current
+  # glibc and current system libraries.
+  qt6-runtime:
+    plugin: nil
+    stage-packages:
+      - libqt6core6t64
+      - libqt6gui6
+      - libqt6widgets6
+      - libqt6qml6
+      - libqt6quick6
+      - libqt6quickcontrols2-6
+      - libqt6svg6
+      # libqt6svg6 alone is the SVG library, not the rasterizer plugins
+      # (libqsvg.so / libqsvgicon.so). Without this, every SVG icon in the
+      # interface - including the tray icon - silently fails to load.
+      - qt6-svg-plugins
+      - libqt6opengl6
+      - libqt6network6
+      - qt6-qpa-plugins
+      - qml6-module-qtquick
+      - qml6-module-qtquick-controls
+      - qml6-module-qtquick-templates
+      - qml6-module-qtquick-layouts
+      - qml6-module-qtqml-workerscript
+    stage:
+      - usr/lib/x86_64-linux-gnu/libQt6*
+      - usr/lib/x86_64-linux-gnu/qt6/plugins/*
+      - usr/lib/x86_64-linux-gnu/qt6/qml/*
+
+  wrapper:
+    plugin: dump
+    after: [medea]
+    source: extras/medea
+    stage:
+      - medea-snap-wrapper.sh
+    organize:
+      medea-snap-wrapper.sh: usr/bin/medea-snap-wrapper.sh

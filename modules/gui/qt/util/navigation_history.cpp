@@ -1,6 +1,5 @@
 #include "navigation_history.hpp"
 #include <cassert>
-#include "network/networkmediamodel.hpp"
 #include "medialibrary/mlqmltypes.hpp"
 
 NavigationHistory::NavigationHistory(QObject *parent)
@@ -61,14 +60,6 @@ static bool isNodeValid(const QVariant& value)
             if (!isNodeValid(v))
                 return false;
         }
-        return true;
-    }
-    else if (value.canConvert<NetworkTreeItem>() )
-    {
-        NetworkTreeItem item = value.value<NetworkTreeItem>();
-        if ( ! item.isValid() )
-            return false;
-
         return true;
     }
     else if ( value.canConvert<QVariantMap>() )

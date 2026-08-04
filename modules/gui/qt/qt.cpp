@@ -30,7 +30,6 @@
 #include <QQuickStyle>
 
 QT_BEGIN_NAMESPACE
-#include "plugins.hpp"
 QT_END_NAMESPACE
 
 #define VLC_MODULE_LICENSE VLC_LICENSE_GPL_2_PLUS
@@ -53,6 +52,7 @@ extern "C" char **environ;
 
 #include <QApplication>
 #include <QDate>
+#include <QFontDatabase>
 #include <QMutex>
 #include <QtQuickControls2/QQuickStyle>
 #include <QLoggingCategory>
@@ -91,8 +91,6 @@ extern "C" char **environ;
 #include "util/shared_input_item.hpp"
 #include "util/model_recovery_agent.hpp"
 #include "util/vlcqtmessagehandler.hpp"
-#include "network/networkmediamodel.hpp"
-#include "network/devicesourceprovider.hpp"
 #include "playlist/playlist_common.hpp"
 #include "playlist/playlist_item.hpp"
 #include "dialogs/dialogs/dialogmodel.hpp"
@@ -135,11 +133,11 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
 
 #define SYSTRAY_TEXT N_( "Systray icon" )
 #define SYSTRAY_LONGTEXT N_( "Show an icon in the systray " \
-                             "allowing you to control VLC media player " \
+                             "allowing you to control AV " \
                              "for basic actions." )
 
-#define MINIMIZED_TEXT N_( "Start VLC with only a systray icon" )
-#define MINIMIZED_LONGTEXT N_( "VLC will start with just an icon in " \
+#define MINIMIZED_TEXT N_( "Start AV with only a systray icon" )
+#define MINIMIZED_LONGTEXT N_( "AV will start with just an icon in " \
                                "your taskbar." )
 
 #define KEEPSIZE_TEXT N_( "Resize interface to the native video size" )
@@ -155,7 +153,7 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
 #define NOTIFICATION_TEXT N_( "Show notification popup on track change" )
 #define NOTIFICATION_LONGTEXT N_( \
     "Show a notification popup with the artist and track name when " \
-    "the current playlist item changes, when VLC is minimized or hidden." )
+    "the current playlist item changes, when AV is minimized or hidden." )
 
 #define OPACITY_TEXT N_( "Windows opacity between 0.1 and 1" )
 #define OPACITY_LONGTEXT N_( "Sets the windows opacity between 0.1 and 1 " \
@@ -192,7 +190,7 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
         "the recent items played in the player." )
 
 #define QT_MODE_TEXT N_( "Selection of the starting mode and look" )
-#define QT_MODE_LONGTEXT N_( "Start VLC with:\n" \
+#define QT_MODE_LONGTEXT N_( "Start AV with:\n" \
                              " - normal mode\n"  \
                              " - a zone always present to show information " \
                                   "as lyrics, album arts...\n" \
@@ -222,8 +220,8 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
 #define QT_DISABLE_VOLUME_KEYS_LONGTEXT N_(                                             \
     "With this option checked, the volume up, volume down and mute buttons on your "    \
     "keyboard will always change your system volume. With this option unchecked, the "  \
-    "volume buttons will change VLC's volume when VLC is selected and change the "      \
-    "system volume when VLC is not selected." )
+    "volume buttons will change AV's volume when AV is selected and change the "      \
+    "system volume when AV is not selected." )
 
 #define QT_PAUSE_MINIMIZED_TEXT N_( "Pause the video playback when minimized" )
 #define QT_PAUSE_MINIMIZED_LONGTEXT N_( \
@@ -401,11 +399,10 @@ vlc_module_begin ()
 #endif
 
     add_bool( "qt-titlebar",
-#ifdef _WIN32
-              false                              /* use CSD by default on windows */,
-#else
-              true                               /* but not on linux */,
-#endif
+              /* Medea draws its own title bar on every platform, so it follows
+               * the selected palette instead of the desktop's window manager
+               * theme. */
+              false,
               QT_CLIENT_SIDE_DECORATION_TEXT, QT_CLIENT_SIDE_DECORATION_LONGTEXT )
 
     add_bool( "qt-menubar", false, QT_MENUBAR_TEXT, QT_MENUBAR_LONGTEXT )
@@ -771,7 +768,6 @@ static inline void registerMetaTypes()
     qRegisterMetaType<VLCDuration>();
     qRegisterMetaType<QList<TimedText>>("QList<TimedText>");
     qRegisterMetaType<SharedInputItem>();
-    qRegisterMetaType<NetworkTreeItem>();
     qRegisterMetaType<Playlist>();
     qRegisterMetaType<PlaylistItem>();
     qRegisterMetaType<DialogId>();
@@ -824,7 +820,6 @@ static void *Thread( void *obj )
     Q_INIT_RESOURCE( menus_assets );
     Q_INIT_RESOURCE( maininterface_assets );
     Q_INIT_RESOURCE( medialibrary_assets );
-    Q_INIT_RESOURCE( network_assets );
     Q_INIT_RESOURCE( player_assets );
     Q_INIT_RESOURCE( playercontrols_assets );
     Q_INIT_RESOURCE( playlist_assets );
@@ -1123,13 +1118,32 @@ static void *Thread( void *obj )
     }
 #endif
 
-    app.setApplicationDisplayName( qtr("VLC media player") );
+    app.setApplicationDisplayName( qtr("AV") );
     app.setApplicationVersion( QString::fromUtf8(VERSION_MESSAGE) );
 
-    if( QDate::currentDate().dayOfYear() >= QT_XMAS_JOKE_DAY && var_InheritBool( p_intf, "qt-icon-change" ) )
-        app.setWindowIcon( QIcon::fromTheme( "vlc-xmas", QIcon( ":/logo/vlc128-xmas.png" ) ) );
-    else
-        app.setWindowIcon( QIcon::fromTheme( "vlc", QIcon( ":/logo/vlc256.png" ) ) );
+    app.setWindowIcon( QIcon::fromTheme( "medea", QIcon( ":/logo/medea.svg" ) ) );
+
+    /* Medea ships DotGothic16 and uses it for the whole interface, so the app
+     * looks the same on every desktop rather than inheriting whatever the
+     * system UI font happens to be. Point sizes are left alone: VLCStyle sets
+     * pixel sizes explicitly. */
+    {
+        const int fontId = QFontDatabase::addApplicationFont(
+                    QStringLiteral(":/logo/DotGothic16-Regular.ttf") );
+        if( fontId != -1 )
+        {
+            const QStringList families = QFontDatabase::applicationFontFamilies( fontId );
+            if( !families.isEmpty() )
+            {
+                QFont uiFont( families.first() );
+                uiFont.setHintingPreference( QFont::PreferFullHinting );
+                app.setFont( uiFont );
+            }
+        }
+        else
+            msg_Warn( p_intf, "could not load the DotGothic16 UI font; "
+                              "falling back to the system font" );
+    }
 
     app.setDesktopFileName( PACKAGE );
 
@@ -1353,7 +1367,6 @@ static void *ThreadCleanup( qt_intf_t *p_intf, CleanupReason cleanupReason )
     DialogsProvider::killInstance();
     VLCDialogModel::killInstance();
     DialogErrorModel::killInstance();
-    MediaSourceCache::killInstance();
 
     //destroy MainCtx, Compositor shouldn't not use MainCtx after `unloadGUI`
     if (p_intf->p_mi) {

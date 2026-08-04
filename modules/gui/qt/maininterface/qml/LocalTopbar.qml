@@ -145,13 +145,8 @@ T.ToolBar {
                     Navigation.rightItem: playlistBtn
                 }
 
-                Widgets.BannerCone {
-                    id: logo
-
-                    sourceSize.width: VLCStyle.bannerButton_height
-                    sourceSize.height: VLCStyle.bannerButton_height
-                    color: theme.accent
-                }
+                // Medea shows no product mark in its own title bar - the
+                // window is already identified by the launcher and the tray.
             }
         }
 

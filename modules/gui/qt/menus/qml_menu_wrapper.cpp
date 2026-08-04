@@ -21,8 +21,6 @@
 #include "medialibrary/mlplaylistlistmodel.hpp"
 #include "medialibrary/mlplaylistmodel.hpp"
 #include "medialibrary/mlbookmarkmodel.hpp"
-#include "network/networkdevicemodel.hpp"
-#include "network/networkmediamodel.hpp"
 #include "player/player_controller.hpp"
 #include "playlist/playlist_controller.hpp"
 #include "playlist/playlist_model.hpp"
@@ -935,113 +933,7 @@ void PlaylistMediaContextMenu::popup(const QModelIndexList & selected, QPoint po
 
 //=================================================================================================
 
-void NetworkMediaContextMenu::popup(const QModelIndexList& selected, QPoint pos)
-{
-    assert(m_ctx);
 
-    if (!m_model)
-        return;
-
-    auto menu = newMenu();
-    QAction* action;
-
-    action = menu->addAction( qtr("Add and play") );
-    connect(action, &QAction::triggered, [this, selected]( ) {
-        m_model->addAndPlay(selected);
-    });
-
-    action = menu->addAction( qtr("Enqueue") );
-    connect(action, &QAction::triggered, [this, selected]( ) {
-        m_model->addToPlaylist(selected);
-    });
-
-    action = menu->addAction( qtr("Information") );
-    connect(action, &QAction::triggered, [this, selected]( ) {
-        if (selected.isEmpty()) return;
-
-        m_model->getItemsForIndexes(selected, [](const QVariantList& items) {
-            if (items.isEmpty()) return;
-
-            QVariant firstItem = items.first();
-
-            if (firstItem.canConvert<SharedInputItem>()) {
-                 SharedInputItem sii = firstItem.value<SharedInputItem>();
-                 DialogsProvider::getInstance()->mediaInfoDialog(sii);
-            }
-        });
-    });
-
-    bool canBeIndexed = false;
-    unsigned countIndexed = 0;
-    for (const QModelIndex& idx : selected)
-    {
-        QVariant canIndex = m_model->data(m_model->index(idx.row()), NetworkMediaModel::NETWORK_CANINDEX );
-        if (canIndex.isValid() && canIndex.toBool())
-            canBeIndexed = true;
-        else
-            continue;
-        QVariant isIndexed = m_model->data(m_model->index(idx.row()), NetworkMediaModel::NETWORK_INDEXED );
-        if (!isIndexed.isValid())
-            continue;
-        if (isIndexed.toBool())
-            ++countIndexed;
-    }
-
-    if (canBeIndexed)
-    {
-        bool removeFromML = countIndexed > 0;
-        action = menu->addAction(removeFromML
-            ? qtr("Remove from Media Library")
-            : qtr("Add to Media Library"));
-
-        connect(action, &QAction::triggered, [this, selected, removeFromML]( ) {
-            for (const QModelIndex& idx : selected) {
-                m_model->setData(m_model->index(idx.row()), !removeFromML, NetworkMediaModel::NETWORK_INDEXED);
-            }
-        });
-    }
-
-    menu->popup(pos);
-}
-
-void NetworkDeviceContextMenu::popup(const QModelIndexList& selected, QPoint pos)
-{
-    assert(m_ctx);
-
-    if (!m_model)
-        return;
-
-    auto menu = newMenu();
-    QAction* action;
-
-    action = menu->addAction( qtr("Add and play") );
-    connect(action, &QAction::triggered, [this, selected]( ) {
-        m_model->addAndPlay(selected);
-    });
-
-    action = menu->addAction( qtr("Enqueue") );
-    connect(action, &QAction::triggered, [this, selected]( ) {
-        m_model->addToPlaylist(selected);
-    });
-
-    action = menu->addAction( qtr("Information") );
-    connect(action, &QAction::triggered, [this, selected]( ) {
-        if (selected.isEmpty()) return;
-
-        m_model->getItemsForIndexes(selected, [](const QVariantList& items) {
-            if (items.isEmpty()) return;
-
-            QVariant firstItem = items.first();
-
-            if (firstItem.canConvert<SharedInputItem>()) {
-                 SharedInputItem sii = firstItem.value<SharedInputItem>();
-                 DialogsProvider::getInstance()->mediaInfoDialog(sii);
-            }
-        });
-    });
-
-    menu->popup(pos);
-}
 
 PlaylistContextMenu::PlaylistContextMenu(QObject* parent)
     : QObject(parent)

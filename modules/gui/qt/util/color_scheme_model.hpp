@@ -27,23 +27,20 @@ class ColorSchemeModel : public QAbstractListModel
 {
     Q_OBJECT
     Q_PROPERTY(QString current READ currentText NOTIFY currentChanged FINAL)
-    Q_PROPERTY(ColorScheme scheme READ currentScheme NOTIFY currentChanged FINAL)
+    Q_PROPERTY(int scheme READ currentScheme NOTIFY currentChanged FINAL)
 
 public:
-    enum ColorScheme
-    {
-        System,
-        Day,
-        Night
-    };
+    /* Medea replaces VLC's System/Day/Night schemes with its own palette set,
+     * so a "scheme" is an index into medea_palettes (see medeapalettes.hpp).
+     * The alias is kept so existing ColorSchemeModel::ColorScheme references
+     * still compile. */
+    using ColorScheme = int;
 
     struct Item
     {
         QString text;
         ColorScheme scheme;
     };
-
-    Q_ENUM(ColorScheme)
 
     explicit ColorSchemeModel(QObject* parent = nullptr);
 

@@ -21,6 +21,7 @@ import QtQuick.Window
 import VLC.MainInterface
 import VLC.Widgets as Widgets
 import VLC.Util
+import VLC.Playlist
 import VLC.Style
 import VLC.Dialogs
 
@@ -103,13 +104,17 @@ FocusScope {
         Image {
             id: cone
 
+            // Hidden on the populated Home page (corner badge); still shown
+            // on the empty-library placeholder (large centered logo).
+            visible: orientation === Qt.Vertical
+
             property real _eDPR: MainCtx.effectiveDevicePixelRatio(Window.window)
 
             sourceSize: Qt.size(0, orientation === Qt.Vertical ? VLCStyle.colWidth(1)
-                                                               : buttons.implicitHeight * 1.618 * _eDPR) // 1.618 = golden ratio approximation
+                                                               : VLCStyle.icon_large * _eDPR)
 
-            source: MainCtx.useXmasCone() ? "qrc:///logo/vlc48-xmas.png" // TODO: new xmas cone designs
-                                          : "qrc:///misc/cone.svg"
+            // Medea's mark, not VideoLAN's cone - see BannerCone.qml.
+            source: "qrc:///logo/medea.svg"
 
             Connections {
                 target: MainCtx
@@ -125,50 +130,19 @@ FocusScope {
             }
         }
 
+        // The "Open File" button used to live here. It never worked (the
+        // dialog silently failed to appear regardless of which backend was
+        // tried - portal, non-native Qt dialog, transient-parented Qt
+        // dialog), so it was removed rather than ship a dead button. Use the
+        // Media menu or Ctrl+O instead.
+        //
+        // `buttons` is kept as an empty anchor target: the states above
+        // reference it by id for layout, and coneNButtons.implicitWidth/Height
+        // read its (now zero) size.
         Row {
             id: buttons
 
             spacing: coneNButtons.spacing
-
-            Widgets.ActionButtonPrimary {
-                id: fileButton
-
-                AccessibleCompat.id: "openFileButton"
-
-                focus: true
-
-                text: qsTr("Open File")
-
-                // NOTE: Use the same width for the buttons (give more width if necessary) to have bilateral symmetry:
-                width: Math.max(fileButton.implicitWidth, discButton.implicitWidth)
-
-                Navigation.parentItem: coneNButtons
-                Navigation.rightItem: discButton
-
-                // TODO: The full-fledged open dialog is advertised as "Open Multiple Files" in the menu.
-                //       In the future, we can have the "Open File" button as a combo box button that has these options,
-                //       with the default being a simple open dialog:
-                //       - Default: simple open dialog.
-                //       - Combo box option 1 (user clicks the down button, and the combo box reveals all buttons): open multiple files (Ctrl+Shift+O).
-                //       - Combo box option 2: open location from clipboard (Ctrl+V) / simple text edit dialog.
-                onClicked: DialogsProvider.simpleOpenDialog()
-            }
-
-            Widgets.ActionButtonPrimary {
-                id: discButton
-
-                AccessibleCompat.id: "discButton"
-
-                text: qsTr("Open Disc")
-
-                // NOTE: Use the same width for the buttons (give more width if necessary) to have bilateral symmetry:
-                width: Math.max(fileButton.implicitWidth, discButton.implicitWidth)
-
-                Navigation.parentItem: coneNButtons
-                Navigation.leftItem: fileButton
-
-                onClicked: DialogsProvider.openDiscDialog()
-            }
         }
     }
 

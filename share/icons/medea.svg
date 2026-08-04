@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Medea</title>
+  <desc>Colours and geometry sampled from new_logo.png (500x500 RGBA).</desc>
+  <defs>
+    <!-- Sampled along the source's top-left -> bottom-right axis:
+         #FD8A21 -> #FE5311 -> #FA3705, extrapolated to the shape extremes. -->
+    <linearGradient id="medea-flame" x1="0.06" y1="0.06" x2="0.94" y2="0.94">
+      <stop offset="0"   stop-color="#FF9A24"/>
+      <stop offset="0.5" stop-color="#FE5311"/>
+      <stop offset="1"   stop-color="#F93203"/>
+    </linearGradient>
+  </defs>
+
+  <!-- The source mark is a slight ellipse, not a circle: 311x291 px, aspect
+       1.069. That ratio is preserved here. It is scaled up from the source's
+       62% canvas coverage to ~80%, which is what a dock or launcher expects;
+       for the original proportions use rx="159" ry="149". -->
+  <ellipse cx="256" cy="256" rx="205" ry="192" fill="url(#medea-flame)"/>
+</svg>

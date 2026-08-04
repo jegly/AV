@@ -43,6 +43,7 @@
 #include "util/qt_dirs.hpp"                     // toNativeSeparators
 
 #include "util/color_scheme_model.hpp"
+#include "style/medeapalettes.hpp"
 
 #include "widgets/native/interface_widgets.hpp"     // bgWidget, videoWidget
 
@@ -167,22 +168,19 @@ MainCtx::MainCtx(qt_intf_t *_p_intf)
         if (unlikely(!styleHints))
             return;
 
-        Qt::ColorScheme scheme;
-        switch (colorScheme->currentScheme())
+        /* Every Medea palette declares whether it is dark, so the Qt-wide hint
+         * follows the selected palette instead of a System/Day/Night tri-state.
+         * This is what makes native dialogs and window decorations agree with
+         * the interface. */
+        const int idx = colorScheme->currentScheme();
+        if (idx < 0 || idx >= medea_palettes_count)
         {
-        case ColorSchemeModel::ColorScheme::Day:
-            scheme = Qt::ColorScheme::Light;
-            break;
-        case ColorSchemeModel::ColorScheme::Night:
-            scheme = Qt::ColorScheme::Dark;
-            break;
-        case ColorSchemeModel::ColorScheme::System:
-        default:
             styleHints->unsetColorScheme();
             return;
         }
 
-        styleHints->setColorScheme(scheme);
+        styleHints->setColorScheme(medea_palettes[idx].isDark ? Qt::ColorScheme::Dark
+                                                              : Qt::ColorScheme::Light);
     });
 #endif
 
@@ -377,8 +375,12 @@ bool MainCtx::hasVLM() const {
 
 bool MainCtx::useClientSideDecoration() const
 {
-    //don't show CSD when interface is fullscreen
-    return !m_windowTitlebar;
+    /* Medea always draws its own title bar, in every layout mode and
+     * regardless of any qt-titlebar value left in an existing config file.
+     * The window chrome has to follow the selected palette; handing the window
+     * back to the desktop's decorator would show a system bar that ignores it
+     * (and reintroduces the app name and icon we deliberately removed). */
+    return true;
 }
 
 bool MainCtx::hasFirstrun() const {
@@ -394,17 +396,28 @@ void MainCtx::setUseGlobalShortcuts( bool useShortcuts )
 }
 
 void MainCtx::setWindowSuportExtendedFrame(bool support) {
-    if (m_windowSuportExtendedFrame == support)
+    /* Medea: the extended frame is a transparent border kept around the
+     * content so the compositor can draw a CSD drop shadow into it. The UI is
+     * inset by windowExtendedMargin (see MainInterface.qml), so that border is
+     * literally see-through window - and while resizing, the exposed strip
+     * grows before anything repaints, which is the transparent band that
+     * appears when the window is resized. Medea does not use the shadow, so
+     * the frame stays off. */
+    (void)support;
+    if (!m_windowSuportExtendedFrame)
         return;
-    m_windowSuportExtendedFrame = support;
+    m_windowSuportExtendedFrame = false;
     emit windowSuportExtendedFrameChanged();
 }
 
 void MainCtx::setWindowExtendedMargin(unsigned int margin) {
-    if (margin == m_windowExtendedMargin)
+    /* Always zero: see setWindowSuportExtendedFrame(). A non-zero margin insets
+     * the interface and leaves transparent window around it. */
+    (void)margin;
+    if (m_windowExtendedMargin == 0)
         return;
-    m_windowExtendedMargin = margin;
-    emit windowExtendedMarginChanged(margin);
+    m_windowExtendedMargin = 0;
+    emit windowExtendedMarginChanged(0);
 }
 
 /*****************************
@@ -489,11 +502,13 @@ void MainCtx::loadFromSettingsImpl(const bool callSignals)
 
     loadFromSettings(m_showRemainingTime, "MainWindow/ShowRemainingTime", false, this, &MainCtx::showRemainingTimeChanged);
 
+
     loadFromSettings(m_albumSections, "MainWindow/album-sections", true, this, &MainCtx::albumSectionsChanged);
 
     loadFromSettings(m_lyricsMode, "MainWindow/lyrics-mode", true, this, &MainCtx::lyricsModeChanged);
 
-    const auto colorSchemeIndex = getSettings()->value( "MainWindow/color-scheme-index", 0 ).toInt();
+    const auto colorSchemeIndex = getSettings()->value( "MainWindow/color-scheme-index",
+                                      medea_palette_index( MEDEA_DEFAULT ) ).toInt();
     m_colorScheme->setCurrentIndex(colorSchemeIndex);
 
     /* user interface scale factor */

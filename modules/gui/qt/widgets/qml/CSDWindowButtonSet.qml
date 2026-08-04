@@ -25,8 +25,8 @@ import VLC.Style
 Row {
     id: windowButtonGroup
 
-    spacing: 0
-    padding: 0
+    spacing: VLCStyle.dp(2, VLCStyle.scale)
+    padding: VLCStyle.dp(6, VLCStyle.scale)
 
     width: implicitWidth
 
@@ -64,11 +64,19 @@ Row {
 
             externalPressed: modelData.externalPressed
 
-            color: (modelData.type === CSDButton.Close && (hovered || modelData.showHovered))
-                   ? "white"
-                   : windowButtonGroup.color
+            // Traffic-light fills. Kept constant rather than only colouring
+            // on hover, which is what makes the set read as a modern title bar.
+            dotColor: {
+                switch (modelData.type) {
+                case CSDButton.Close:           return "#FF5F57"
+                case CSDButton.Minimize:        return "#FEBC2E"
+                case CSDButton.MaximizeRestore: return "#28C840"
+                }
+                return "#8A8A8E"
+            }
 
-            hoverColor: (modelData.type === CSDButton.Close) ? "red" : windowButtonGroup.hoverColor
+            color: windowButtonGroup.color
+            hoverColor: windowButtonGroup.hoverColor
 
             isThemeDark: theme.palette.isDark
 

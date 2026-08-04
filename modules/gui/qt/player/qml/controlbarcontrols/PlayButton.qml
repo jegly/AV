@@ -217,8 +217,8 @@ T.Control {
                 return VLCIcons.play_filled
         }
 
-        color: cursorInside ? theme.accent
-                            : "black"  //foreground is always black
+        // Sits on the accent fill, so it has to contrast with the accent.
+        color: theme.accent.hslLightness > 0.55 ? "black" : "white"
 
         font.pixelSize: Math.round(parent.height / 1.7)
 
@@ -260,9 +260,10 @@ T.Control {
 
             radius: width / 2
 
+            // Was a hardcoded VLC-orange gradient; follows the palette now.
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#e25b01" }
-                GradientStop { position: 1.0; color: "#f89a06" }
+                GradientStop { position: 0.0; color: Qt.darker(theme.accent, 1.15) }
+                GradientStop { position: 1.0; color: Qt.lighter(theme.accent, 1.10) }
             }
 
             Widgets.RoundedRectangleShadow {
@@ -280,7 +281,8 @@ T.Control {
             Rectangle {
                 id: innerRectangle
 
-                color: "white"
+                // Was hardcoded white, which hid the accent behind a 2px ring.
+                color: theme.accent
 
                 anchors.fill: parent
                 anchors.margins: _diminished ? (parent.width / 2)

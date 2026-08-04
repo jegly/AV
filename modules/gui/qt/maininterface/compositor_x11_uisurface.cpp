@@ -79,6 +79,16 @@ CompositorX11UISurface::CompositorX11UISurface(QWindow* window, QScreen* screen)
     m_uiWindow = new CompositorOffscreenWindow(m_uiRenderControl);
     m_uiWindow->setDefaultAlphaBuffer(true);
     m_uiWindow->setFormat(format());
+    /* Opaque. Upstream cleared this surface to transparent and relied on the
+     * whole window being see-through, with video composited underneath. On
+     * Wayland the video is a subsurface *below* this one, so every region the
+     * UI does not paint - the pillarbox beside a video, the gap between video
+     * and the control bar - showed the desktop instead.
+     *
+     * VideoSurface is a ViewBlockingRectangle and punches its own transparent
+     * hole using CompositionMode_Source, so only the video rectangle needs to
+     * be see-through. That requires renderingEnabled on those items (see
+     * player/qml/Player.qml). */
     m_uiWindow->setColor(Qt::transparent);
 
     m_qmlEngine = new QQmlEngine();

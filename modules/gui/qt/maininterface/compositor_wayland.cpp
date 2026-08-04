@@ -97,6 +97,16 @@ bool CompositorWayland::makeMainInterface(MainCtx* mainCtx, std::function<void(Q
 
     m_qmlView = std::make_unique<QQuickView>();
     m_qmlView->setResizeMode(QQuickView::SizeRootObjectToView);
+    /* Opaque. Upstream cleared this surface to transparent and relied on the
+     * whole window being see-through, with video composited underneath. On
+     * Wayland the video is a subsurface *below* this one, so every region the
+     * UI does not paint - the pillarbox beside a video, the gap between video
+     * and the control bar - showed the desktop instead.
+     *
+     * VideoSurface is a ViewBlockingRectangle and punches its own transparent
+     * hole using CompositionMode_Source, so only the video rectangle needs to
+     * be see-through. That requires renderingEnabled on those items (see
+     * player/qml/Player.qml). */
     m_qmlView->setColor(QColor(Qt::transparent));
 
     m_qmlView->installEventFilter(this);
@@ -294,6 +304,22 @@ bool CompositorWayland::unloadWaylandModule()
 #ifdef QT_WAYLAND_HAS_CUSTOM_MARGIN_SUPPORT
 void CompositorWayland::adjustQuickWindowMask()
 {
+    /* Medea: never mask the surface.
+     *
+     * Upstream masks the toplevel to inset the CSD shadow margins, and only
+     * re-computes the mask from windowExtendedMarginChanged -> widthChanged /
+     * heightChanged. During an interactive resize the surface grows before the
+     * mask is recomputed, so the newly exposed strip falls outside the mask and
+     * nothing paints there - the window shows the desktop straight through.
+     * That is the see-through band that appears while resizing.
+     *
+     * A null region disables masking entirely. We lose nothing: the surface is
+     * cleared opaque and VideoSurface punches its own hole for the video
+     * subsurface, so there is no need to carve the toplevel. */
+    if (m_qmlView)
+        m_qmlView->setMask(QRegion());
+    return;
+
     assert(m_intf);
     assert(m_intf->p_mi);
     // Assuming no overflow:
