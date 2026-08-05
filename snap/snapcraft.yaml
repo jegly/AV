@@ -73,6 +73,7 @@ apps:
       - removable-media
       - screen-inhibit-control
       - pipewire
+      - x11
     slots:
       - mpris
 
