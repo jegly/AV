@@ -71,3 +71,5 @@ static-lib/
 /stage/
 /prime/
 /debbuild/
+*.snap
+.craft/

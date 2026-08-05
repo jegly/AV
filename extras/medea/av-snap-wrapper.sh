@@ -31,4 +31,30 @@ if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -z "${DISABLE_WAYLAND:-}" ]; then
     fi
 fi
 
+# The PulseAudio socket needs the same treatment as the Wayland one above, and
+# for the same reason: libpulse looks for $XDG_RUNTIME_DIR/pulse/native, but
+# under strict confinement that resolves to the private per-snap directory,
+# which contains an empty `pulse/` dir and no socket - hence "PulseAudio server
+# connection failure: Connection refused". The `pulseaudio`/`audio-playback`
+# interfaces do grant access to the real socket one level up; nothing points
+# libpulse at it. Unlike Wayland this cannot be a symlink into the snap dir -
+# libpulse takes a server address - so export PULSE_SERVER instead.
+#
+# This is byte-for-byte what upstream VLC's own snap ends up with: it gets
+# PULSE_SERVER=unix:/run/user/1000/snap.vlc/../pulse/native from the kde-neon-6
+# extension's command-chain (kf6-core24's snap/command-chain/desktop-launch6),
+# which AV cannot use on core26 and so has to do itself.
+#
+# Note there is deliberately no ALSA equivalent here. ALSA cannot work under
+# this confinement at all - /proc/asound is denied, so alsa-lib cannot even
+# enumerate card 0 - and forcing `--aout alsa` fails identically on upstream
+# VLC's snap. VLC only falls back to ALSA when pulse fails to open, so with
+# this set it is never reached.
+if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+    pulseaudio_sockpath="$XDG_RUNTIME_DIR/../pulse/native"
+    if [ -S "$pulseaudio_sockpath" ]; then
+        export PULSE_SERVER="unix:${pulseaudio_sockpath}"
+    fi
+fi
+
 exec "$SNAP/usr/bin/av" --config="$SNAP_USER_COMMON/avrc" "$@"

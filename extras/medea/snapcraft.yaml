@@ -1,4 +1,9 @@
-name: av
+# Store name only. The two-letter name "av" is reserved by the store, so the
+# published snap is "audiovisual"; everything the user actually sees is still
+# AV - the launcher name, window title, icon, org.av.player, the `av` binary
+# and avrc are all unchanged. Do not confuse this with the part named `av`
+# below, or with adopt-info, which references that part.
+name: audiovisual
 adopt-info: av
 grade: stable
 base: core26
@@ -43,7 +48,10 @@ hooks:
       - desktop
 
 apps:
-  av:
+  # Matches the snap name deliberately: when they differ, snapd names the
+  # command <snap>.<app> ("audiovisual.av"). Keeping them equal gives a plain
+  # `snap run audiovisual` and an exported Exec=/snap/bin/audiovisual.
+  audiovisual:
     desktop: av.desktop
     command: usr/bin/av-snap-wrapper.sh
     # No kde-neon-6 here: `snapcraft extensions` confirms it supports only
