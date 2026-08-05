@@ -256,7 +256,7 @@ parts:
     plugin: dump
     after: [medea]
     source: extras/medea
-    stage:
-      - medea-snap-wrapper.sh
     organize:
       medea-snap-wrapper.sh: usr/bin/medea-snap-wrapper.sh
+    stage:
+      - usr/bin/medea-snap-wrapper.sh
