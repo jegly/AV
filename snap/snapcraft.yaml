@@ -16,6 +16,17 @@ description: |
 confinement: strict
 compression: lzo
 
+# The library linter's "unused library" detection only sees direct NEEDED
+# links from the app's own command binary. It cannot see what Qt's XCB
+# platform plugin or VLC's own plugins pull in via dlopen() at runtime, so
+# it silently strips libraries that are genuinely required (libX11, libxcb,
+# EGL/GLX, libproxy's backend, etc. - each one only surfacing as a runtime
+# "cannot open shared object file" crash, one at a time). Disabling it
+# entirely rather than allowlisting library-by-library.
+lint:
+  ignore:
+    - library
+
 # 64-bit Intel/AMD only. Medea is built with -march=x86-64-v3 (AVX2/BMI2/FMA,
 # Haswell 2013 and newer), so there is nothing to gain from building the other
 # architectures and a lot of CI time to lose.
