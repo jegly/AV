@@ -12,4 +12,9 @@ export QT_QPA_PLATFORM=xcb
 # So the host shell can resolve the tray icon by name over StatusNotifierItem.
 export XDG_DATA_DIRS="$SNAP/usr/share:$XDG_DATA_DIRS"
 
+# alsa-lib looks for its config at the literal absolute path
+# /usr/share/alsa/alsa.conf, which under strict confinement is $SNAP's copy,
+# not the host's - point it there directly instead.
+export ALSA_CONFIG_PATH="$SNAP/usr/share/alsa/alsa.conf"
+
 exec "$SNAP/usr/bin/medea" --config="$SNAP_USER_COMMON/medearc" "$@"

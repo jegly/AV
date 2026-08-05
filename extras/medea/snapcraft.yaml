@@ -68,8 +68,20 @@ apps:
       # Also absent: audio-record and camera (playback only), dvb and
       # optical-drive (no tuner or disc support), mount-observe and udisks2
       # (device enumeration), removable-media is kept so external drives work.
+      # opengl, pulseaudio and desktop-legacy were missing entirely - not a
+      # deliberate exclusion, just never added. Found by diffing against
+      # upstream VLC's actual published/working snap (`snap connections vlc`):
+      # opengl grants /dev/dri device access (the gpu extension's content
+      # interface alone only provides Mesa's userspace libraries, not the
+      # device node - MESA-LOADER "failed to retrieve device information"
+      # without it). pulseaudio grants the actual pulse-protocol socket VLC's
+      # audio module connects to, which is a different interface than
+      # pipewire's native-protocol socket ("Connection refused" without it).
       - audio-playback
+      - desktop-legacy
       - home
+      - opengl
+      - pulseaudio
       - removable-media
       - screen-inhibit-control
       - pipewire
