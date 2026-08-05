@@ -65,45 +65,30 @@ FirstRunWizard::FirstRunWizard( qt_intf_t *_p_intf, QWidget *parent)
         "</p>\n" ) );
     ui.policy->setReadOnly( true );
 
-    /* Set up the button group for colour schemes. */
-    /* Creating in Qt Designer has unstable ordering when calling buttons() */
-    /* Medea has no System/Day/Night tri-state - it has a palette list. The
-     * wizard offers three starting points from that list; the rest are in
-     * preferences. IDs are resolved by key rather than hardcoded, so adding or
-     * reordering palettes cannot silently repoint these buttons. */
-    colorSchemeGroup = new QButtonGroup( this );
-    colorSchemeGroup->addButton( ui.systemButton, medea_palette_index( "ptyxis_nord" ) );
-    colorSchemeGroup->addButton( ui.lightButton, medea_palette_index( "ptyxis_kanagawa" ) );
-    colorSchemeGroup->addButton( ui.darkButton, medea_palette_index( "ptyxis_synthwave" ) );
-    colorSchemeGroup->setExclusive( true );
-
-    /* The three radio buttons are only shortcuts. Medea ships 49 palettes and
-     * the Ptyxis set is the point of it, so the full list is offered here
-     * rather than being reachable only after first launch. */
+    /* AV has no System/Day/Night tri-state - it has a flat palette list, so
+     * the color scheme page is just a single dropdown of all of them. */
     paletteCombo = new QComboBox( this );
     for( int i = 0; i < medea_palettes_count; i++ )
         paletteCombo->addItem( QString::fromUtf8( medea_palettes[i].displayName ), i );
+
+    const auto setExplainerFor = [this]( int row ) {
+        if( row < 0 || row >= medea_palettes_count )
+            return;
+        ui.explainerLabel->setText( qtr( "<i>AV will use the %1 theme.</i>" )
+                                    .arg( QString::fromUtf8( medea_palettes[row].displayName ) ) );
+    };
 
     {
         const int defaultIdx = medea_palette_index( MEDEA_DEFAULT );
         if( defaultIdx >= 0 )
             paletteCombo->setCurrentIndex( defaultIdx );
+        setExplainerFor( paletteCombo->currentIndex() );
     }
 
-    connect( paletteCombo, &QComboBox::currentIndexChanged, this, [this]( int row ) {
-        if( row < 0 || row >= medea_palettes_count )
-            return;
-        ui.explainerLabel->setText( qtr( "<i>AV will use the %1 theme.</i>" )
-                                    .arg( QString::fromUtf8( medea_palettes[row].displayName ) ) );
-    } );
+    connect( paletteCombo, &QComboBox::currentIndexChanged, this, setExplainerFor );
 
-    ui.gridLayout_3->addWidget( new QLabel( qtr( "All themes:" ), this ), 4, 0 );
-    ui.gridLayout_3->addWidget( paletteCombo, 4, 1, 1, 2 );
-
-    colorSchemeImages = new QButtonGroup( this );
-    colorSchemeImages->addButton( ui.daynightImage );
-    colorSchemeImages->addButton( ui.lightImage );
-    colorSchemeImages->addButton( ui.darkImage );
+    ui.gridLayout_3->addWidget( new QLabel( qtr( "All themes:" ), this ), 2, 0 );
+    ui.gridLayout_3->addWidget( paletteCombo, 2, 1, 1, 2 );
 
     /* Setup the layout page */
     ui.layoutGroup->setId( ui.modernButton, 0 );
@@ -150,8 +135,6 @@ FirstRunWizard::FirstRunWizard( qt_intf_t *_p_intf, QWidget *parent)
 
     /* Slots and Signals */
     connect( ui.addButton, &QPushButton::clicked, this, &FirstRunWizard::MLaddNewFolder );
-    connect( colorSchemeGroup, qOverload<QAbstractButton*>( &QButtonGroup::buttonClicked ), this, &FirstRunWizard::updateColorLabel );
-    connect( colorSchemeImages, qOverload<QAbstractButton*>( &QButtonGroup::buttonClicked ), this, &FirstRunWizard::imageColorSchemeClick );
     connect( ui.layoutGroup, qOverload<QAbstractButton*>( &QButtonGroup::buttonClicked ), this, &FirstRunWizard::updateLayoutLabel );
     connect( layoutImages, qOverload<QAbstractButton*>( &QButtonGroup::buttonClicked ), this, &FirstRunWizard::imageLayoutClick );
     connect( this->button(QWizard::FinishButton), &QPushButton::clicked, this, &FirstRunWizard::finish );
@@ -225,25 +208,6 @@ void FirstRunWizard::MLaddNewFolder()
 }
 
 /**
- * Automatically updates the label on the color scheme page depending
- * on the currently selected radio button choice
- * @param id The id of the button we are updating the label of
- */
-void FirstRunWizard::updateColorLabel( QAbstractButton* btn )
-{
-    const int idx = colorSchemeGroup->id( btn );
-    if ( idx < 0 || idx >= medea_palettes_count )
-        return;
-
-    if ( paletteCombo )
-        paletteCombo->setCurrentIndex( idx );
-
-    ui.explainerLabel->setText( qtr( "<i>AV will use the %1 theme. "
-                                     "More are available in Preferences.</i>" )
-                                .arg( QString::fromUtf8( medea_palettes[idx].displayName ) ) );
-}
-
-/**
  * Automatically updates the label depending on the currently selected layout
  * @param id The id of the button we are updating the label of
  */
@@ -258,19 +222,6 @@ void FirstRunWizard::updateLayoutLabel( QAbstractButton* btn )
             ui.layoutExplainer->setText( qtr( "<i>AV will use a classic layout with a menubar and pinned controls but with no client-side decoration</i>" ) );
             break;
     }
-}
-
-/**
- * Checks the correct button when the corresponding image is clicked
- * for the color scheme page.
- * @param id The id of the image that was clicked
- */
-void FirstRunWizard::imageColorSchemeClick( QAbstractButton* btn )
-{
-    QAbstractButton* groupBtn = colorSchemeGroup->buttons().at( colorSchemeImages->id( btn ) );
-    assert( groupBtn );
-    groupBtn->setChecked( true );
-    updateColorLabel( groupBtn );
 }
 
 /**
@@ -309,38 +260,12 @@ int FirstRunWizard::nextId() const
 }
 
 /**
- * Sets up the buttons and options for the color scheme page
- * Needs to be set up later or else the main interface hasn't been created yet
- * Color schemes are always in the order system/auto, day then night
+ * Sets up options for the wizard pages that need the main interface to
+ * already exist.
  */
 void FirstRunWizard::initializePage( int id )
 {
-    if(id == COLOR_SCHEME_PAGE)
-    {
-        /* Medea exposes 49 palettes but the wizard only offers three starting
-         * points, so buttons are deliberately NOT 1:1 with the scheme list -
-         * the upstream assert on equal sizes cannot hold here. The IDs were
-         * already assigned by palette key in the constructor; this only puts
-         * the palette's display name on each button. */
-        const auto schemeButtons = colorSchemeGroup->buttons();
-        const auto schemeImages = colorSchemeImages->buttons();
-
-        for( QAbstractButton *btn : schemeButtons )
-        {
-            const int idx = colorSchemeGroup->id( btn );
-            if( idx >= 0 && idx < medea_palettes_count )
-                btn->setText( QString::fromUtf8( medea_palettes[idx].displayName ) );
-        }
-
-        /* Keep the decorative image buttons pointing at the same palettes. */
-        for( int i = 0; i < schemeImages.size() && i < schemeButtons.size(); i++ )
-            colorSchemeImages->setId( schemeImages.at(i),
-                                      colorSchemeGroup->id( schemeButtons.at(i) ) );
-
-        if( !schemeButtons.isEmpty() )
-            updateColorLabel( schemeButtons.first() );
-    }
-    else if ( id == FOLDER_PAGE )
+    if ( id == FOLDER_PAGE )
         addDefaults();
 }
 

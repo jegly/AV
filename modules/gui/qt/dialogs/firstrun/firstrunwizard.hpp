@@ -51,16 +51,12 @@ private:
     bool mlDefaults = false;
 
     class QComboBox* paletteCombo = nullptr;
-    QButtonGroup* colorSchemeGroup = nullptr;
-    QButtonGroup* colorSchemeImages = nullptr;
     QButtonGroup* layoutImages = nullptr;
 
 private slots:
     void finish();
     void MLaddNewFolder();
-    void updateColorLabel( QAbstractButton* );
     void updateLayoutLabel (QAbstractButton* );
-    void imageColorSchemeClick ( QAbstractButton* );
     void imageLayoutClick( QAbstractButton* );
 };
 
