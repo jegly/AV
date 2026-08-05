@@ -783,7 +783,7 @@ static void *Thread( void *obj )
 
     auto vlcQtMessageHandler = VlcQtMessageHandlerRegisterer{VLC_OBJECT(p_intf)};
 
-    char vlc_name[] = "vlc"; /* for WM_CLASS */
+    char vlc_name[] = "av"; /* for WM_CLASS, must match StartupWMClass in av.desktop */
     char *argv[3] = { nullptr };
     int argc = 0;
 
@@ -1121,9 +1121,9 @@ static void *Thread( void *obj )
     app.setApplicationDisplayName( qtr("AV") );
     app.setApplicationVersion( QString::fromUtf8(VERSION_MESSAGE) );
 
-    app.setWindowIcon( QIcon::fromTheme( "medea", QIcon( ":/logo/medea.svg" ) ) );
+    app.setWindowIcon( QIcon::fromTheme( "av", QIcon( ":/logo/av.svg" ) ) );
 
-    /* Medea ships DotGothic16 and uses it for the whole interface, so the app
+    /* AV ships DotGothic16 and uses it for the whole interface, so the app
      * looks the same on every desktop rather than inheriting whatever the
      * system UI font happens to be. Point sizes are left alone: VLCStyle sets
      * pixel sizes explicitly. */

@@ -3,7 +3,7 @@
          pixmaps/misc/cone.svg are deliberately not bundled here. Medea is an
          independent fork and does not ship VideoLAN's trademarked mark. -->
     <qresource prefix="/logo">
-        <file alias="medea.svg">../../../share/icons/medea.svg</file>
+        <file alias="av.svg">../../../share/icons/av.svg</file>
         <file alias="DotGothic16-Regular.ttf">../../../share/fonts/DotGothic16-Regular.ttf</file>
     </qresource>
     <qresource prefix="/icons">

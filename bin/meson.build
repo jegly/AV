@@ -22,7 +22,7 @@ if build_vlc and (host_system != 'darwin' or have_osx) and not have_win_store an
         endif
     endif
 
-    executable('medea',
+    executable('av',
         vlc_sources,
         link_with: [libvlc, libvlccore],
         include_directories: [vlc_include_dirs],
@@ -34,7 +34,7 @@ if build_vlc and (host_system != 'darwin' or have_osx) and not have_win_store an
     vlc_top_builddir_def = '-DTOP_BUILDDIR="@0@"'.format(vlc_build_root)
     vlc_top_srcdir_def = '-DTOP_SRCDIR="@0@"'.format(vlc_src_root)
 
-    executable('medea-static',
+    executable('av-static',
         vlc_sources,
         link_with: [libvlc, libvlccore],
         include_directories: [vlc_include_dirs],

@@ -1,5 +1,5 @@
 name: av
-adopt-info: medea
+adopt-info: av
 grade: stable
 base: core26
 summary: A local-only audio and video player
@@ -27,7 +27,7 @@ lint:
   ignore:
     - library
 
-# 64-bit Intel/AMD only. Medea is built with -march=x86-64-v3 (AVX2/BMI2/FMA,
+# 64-bit Intel/AMD only. AV is built with -march=x86-64-v3 (AVX2/BMI2/FMA,
 # Haswell 2013 and newer), so there is nothing to gain from building the other
 # architectures and a lot of CI time to lose.
 platforms:
@@ -44,8 +44,8 @@ hooks:
 
 apps:
   av:
-    desktop: medea.desktop
-    command: usr/bin/medea-snap-wrapper.sh
+    desktop: av.desktop
+    command: usr/bin/av-snap-wrapper.sh
     # No kde-neon-6 here: `snapcraft extensions` confirms it supports only
     # core22 and core24, not core26. Staying on core26 matters because it is
     # the only base whose glibc matches this build host, which is what lets
@@ -66,11 +66,11 @@ apps:
       # embeds video via a native wl_subsurface instead.
       QT_PLUGIN_PATH: $SNAP/usr/lib/x86_64-linux-gnu/qt6/plugins
       QML2_IMPORT_PATH: $SNAP/usr/lib/x86_64-linux-gnu/qt6/qml
-    common-id: org.medea.player
+    common-id: org.av.player
     plugs:
       # Deliberately absent: network, network-bind, network-observe,
       # avahi-control, avahi-observe. Their absence is the confinement half of
-      # Medea's no-network guarantee - do not add them back without removing
+      # AV's no-network guarantee - do not add them back without removing
       # that claim from the description above.
       #
       # Also absent: audio-record and camera (playback only), dvb and
@@ -101,7 +101,7 @@ apps:
       - mpris
 
 parts:
-  medea:
+  av:
     source: .
     source-type: git
     plugin: nil
@@ -154,17 +154,17 @@ parts:
       # The tray icon has to be resolvable by the host shell: StatusNotifierItem
       # passes an icon *name* over D-Bus, and the host cannot read anything
       # under $SNAP. Exporting it to the snap root is what makes it render.
-      install -Dm644 share/icons/medea.svg \
-          ${CRAFT_PART_INSTALL}/usr/share/icons/hicolor/scalable/apps/medea.svg
-      cp share/icons/medea.svg ${CRAFT_PART_INSTALL}/medea.svg
+      install -Dm644 share/icons/av.svg \
+          ${CRAFT_PART_INSTALL}/usr/share/icons/hicolor/scalable/apps/av.svg
+      cp share/icons/av.svg ${CRAFT_PART_INSTALL}/av.svg
       # Move (not copy) this out of usr/share/applications/: if the original
       # stays there too, snapd's desktop-file export finds BOTH it and the
       # rewritten root-level copy below, producing two separate launcher
       # icons for one snap.
-      mv ${CRAFT_PART_INSTALL}/usr/share/applications/medea.desktop \
-          ${CRAFT_PART_INSTALL}/medea.desktop
-      sed -i 's|^Icon=.*|Icon=/medea.svg|' ${CRAFT_PART_INSTALL}/medea.desktop
-      sed -i 's|TryExec=.*|TryExec=/snap/bin/medea|' ${CRAFT_PART_INSTALL}/medea.desktop
+      mv ${CRAFT_PART_INSTALL}/usr/share/applications/av.desktop \
+          ${CRAFT_PART_INSTALL}/av.desktop
+      sed -i 's|^Icon=.*|Icon=/av.svg|' ${CRAFT_PART_INSTALL}/av.desktop
+      sed -i 's|TryExec=.*|TryExec=/snap/bin/av|' ${CRAFT_PART_INSTALL}/av.desktop
 
     build-packages:
       - autoconf
@@ -295,9 +295,9 @@ parts:
 
   wrapper:
     plugin: dump
-    after: [medea]
+    after: [av]
     source: extras/medea
     organize:
-      medea-snap-wrapper.sh: usr/bin/medea-snap-wrapper.sh
+      av-snap-wrapper.sh: usr/bin/av-snap-wrapper.sh
     stage:
-      - usr/bin/medea-snap-wrapper.sh
+      - usr/bin/av-snap-wrapper.sh

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>org.medea.player</id>
-  <launchable type="desktop-id">medea.desktop</launchable>
+  <id>org.av.player</id>
+  <launchable type="desktop-id">av.desktop</launchable>
 
   <name>AV</name>
   <summary>A local-only audio and video player</summary>

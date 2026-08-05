@@ -114,7 +114,7 @@ FocusScope {
                                                                : VLCStyle.icon_large * _eDPR)
 
             // Medea's mark, not VideoLAN's cone - see BannerCone.qml.
-            source: "qrc:///logo/medea.svg"
+            source: "qrc:///logo/av.svg"
 
             Connections {
                 target: MainCtx

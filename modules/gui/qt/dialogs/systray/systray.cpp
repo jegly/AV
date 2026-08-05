@@ -43,18 +43,18 @@ VLCSystray::VLCSystray(MainCtx* ctx, QObject* parent)
 
     /* StatusNotifierItem hands the host shell either an icon *name* to resolve
      * against its own theme, or serialised pixmap data. A name only works if
-     * medea.svg is installed in a system icon theme, which is not the case for
+     * av.svg is installed in a system icon theme, which is not the case for
      * an uninstalled/staged build or inside a snap - the host then shows a
      * placeholder ("..." on GNOME).
      *
      * Building the icon from explicit pixmaps forces Qt to send the image data
      * itself, so the tray renders correctly regardless of the host's theme. */
-    QIcon iconMedea = QIcon::fromTheme( QStringLiteral( "medea" ) );
+    QIcon iconMedea = QIcon::fromTheme( QStringLiteral( "av" ) );
 
     if( iconMedea.isNull() || iconMedea.availableSizes().isEmpty() )
     {
         iconMedea = QIcon();
-        const QIcon source( QStringLiteral( ":/logo/medea.svg" ) );
+        const QIcon source( QStringLiteral( ":/logo/av.svg" ) );
         for( int size : { 16, 22, 24, 32, 48, 64, 128, 256 } )
         {
             const QPixmap pm = source.pixmap( QSize( size, size ) );
@@ -63,8 +63,8 @@ VLCSystray::VLCSystray(MainCtx* ctx, QObject* parent)
         }
 
         if( iconMedea.availableSizes().isEmpty() )
-            msg_Warn( m_intf, "could not build the Medea tray icon from "
-                              ":/logo/medea.svg" );
+            msg_Warn( m_intf, "could not build the AV tray icon from "
+                              ":/logo/av.svg" );
     }
 
     setIcon( iconMedea );
@@ -197,13 +197,13 @@ void VLCSystray::update()
     if( m_ctx->interfaceVisibility() != QWindow::Hidden )
     {
         m_menu->addAction(
-            QIcon( ":/logo/medea.svg" ), qtr( "&Hide AV in taskbar" ),
+            QIcon( ":/logo/av.svg" ), qtr( "&Hide AV in taskbar" ),
             this, &VLCSystray::hideUpdateMenu);
     }
     else
     {
         m_menu->addAction(
-            QIcon( ":/logo/medea.svg" ), qtr( "Sho&w AV" ),
+            QIcon( ":/logo/av.svg" ), qtr( "Sho&w AV" ),
             this, &VLCSystray::showUpdateMenu);
     }
     m_menu->addSeparator();

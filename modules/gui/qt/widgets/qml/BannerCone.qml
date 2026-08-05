@@ -31,7 +31,7 @@ Image {
 
     sourceSize: Qt.size(VLCStyle.icon_normal, VLCStyle.icon_normal)
 
-    source: "qrc:///logo/medea.svg"
+    source: "qrc:///logo/av.svg"
 
     focus: false
 }

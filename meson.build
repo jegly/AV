@@ -1,4 +1,4 @@
-project('Medea', ['c', 'cpp'],
+project('AV', ['c', 'cpp'],
     version: '4.0.0-dev',
     default_options: ['c_std=gnu17', 'cpp_std=c++17'],
     meson_version: '>=1.10.0')

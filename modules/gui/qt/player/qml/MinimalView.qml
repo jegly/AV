@@ -96,7 +96,7 @@ FocusScope {
             id: logo
 
             // Medea's mark, not VideoLAN's cone - see BannerCone.qml.
-            source: "qrc:///logo/medea.svg"
+            source: "qrc:///logo/av.svg"
 
             anchors.centerIn: parent
             width: Math.min(parent.width / 2, sourceSize.width)

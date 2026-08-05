@@ -243,7 +243,7 @@ int main(int argc, const char *argv[])
 
     int ret = 1;
     libvlc_SetExitHandler(vlc->p_libvlc_int, vlc_kill, &self);
-    libvlc_set_app_id (vlc, "org.medea.player", PACKAGE_VERSION, PACKAGE_NAME);
+    libvlc_set_app_id (vlc, "org.av.player", PACKAGE_VERSION, PACKAGE_NAME);
     libvlc_set_user_agent (vlc, "AV", "AV/"PACKAGE_VERSION);
 
     if (libvlc_InternalAddIntf (vlc->p_libvlc_int, NULL))
