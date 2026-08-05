@@ -281,6 +281,12 @@ parts:
       - libqt6opengl6
       - libqt6network6
       - qt6-qpa-plugins
+      # qt6-qpa-plugins does NOT include the wayland platform plugin - Qt
+      # packages that as a separate module. Without this, "Could not find
+      # the Qt platform plugin wayland" and Qt silently falls back to xcb,
+      # meaning wayland was never actually in effect despite the plug/env
+      # changes intended to enable it.
+      - qt6-wayland
       - qml6-module-qtquick
       - qml6-module-qtquick-controls
       - qml6-module-qtquick-templates
