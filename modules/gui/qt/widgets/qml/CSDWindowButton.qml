@@ -1,6 +1,6 @@
 /*****************************************************************************
  * Copyright (C) 2020 VLC authors and VideoLAN
- * Copyright (C) 2026 Medea authors
+ * Copyright (C) 2026 AV authors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

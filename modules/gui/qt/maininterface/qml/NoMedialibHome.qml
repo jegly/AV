@@ -113,7 +113,7 @@ FocusScope {
             sourceSize: Qt.size(0, orientation === Qt.Vertical ? VLCStyle.colWidth(1)
                                                                : VLCStyle.icon_large * _eDPR)
 
-            // Medea's mark, not VideoLAN's cone - see BannerCone.qml.
+            // AV's mark, not VideoLAN's cone - see BannerCone.qml.
             source: "qrc:///logo/av.svg"
 
             Connections {

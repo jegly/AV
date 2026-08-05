@@ -650,7 +650,6 @@ QStringList DialogsProvider::showSimpleOpen( const QString& help,
      * portal is also bypassed (DontUseNativeDialog) because it fails to
      * register here - "Connection already associated with an application ID" -
      * and then never shows anything at all. */
-    msg_Err( p_intf, "MEDEA-DIAG: constructing QFileDialog" );
     QFileDialog dialog( nullptr,
         help.isEmpty() ? qfut(I_OP_SEL_FILES ) : help,
         (path.isEmpty() ? p_intf->p_mi->getDialogFilePath() : path).toLocalFile(),
@@ -665,9 +664,7 @@ QStringList DialogsProvider::showSimpleOpen( const QString& help,
         dialog.windowHandle()->setTransientParent( parentWindow );
     }
 
-    msg_Err( p_intf, "MEDEA-DIAG: calling exec()" );
     const int rc = dialog.exec();
-    msg_Err( p_intf, "MEDEA-DIAG: exec() returned %d (Accepted=%d)", rc, (int)QDialog::Accepted );
     if( rc != QDialog::Accepted )
         return QStringList();
 
@@ -685,9 +682,7 @@ QStringList DialogsProvider::showSimpleOpen( const QString& help,
 
 void DialogsProvider::simpleOpenDialog(bool start)
 {
-    msg_Err( p_intf, "MEDEA-DIAG: simpleOpenDialog() entered" );
     QStringList urls = DialogsProvider::showSimpleOpen();
-    msg_Err( p_intf, "MEDEA-DIAG: showSimpleOpen() returned %d url(s)", (int)urls.size() );
 
     urls.sort();
     QVector<vlc::playlist::Media> medias;

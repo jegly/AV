@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Remove network-capable modules from the meson build.
 
-Medea is a local-only player. Most network features come out through meson
-feature options (see configure-medea.sh), but VLC's core access modules -
+AV is a local-only player. Most network features come out through meson
+feature options (see configure-av.sh), but VLC's core access modules -
 http, ftp, tcp, udp, rtp and friends - need nothing beyond libc sockets, so
 they have no feature flag and are built unconditionally.
 
 This deletes their `vlc_modules += {...}` entries outright. It is idempotent:
 re-running it on an already-stripped tree reports 0 removals.
 
-Usage: extras/medea/strip_network_modules.py [--check]
+Usage: extras/av/strip_network_modules.py [--check]
   --check  report what would be removed, change nothing (exit 1 if any found)
 """
 import os
@@ -55,7 +55,7 @@ TARGETS = {
     "modules/control/meson.build": [
         "rc", "oldrc", "netsync", "telnet", "lirc", "motion",
     ],
-    # cdda calls socket()/connect() for CDDB metadata lookup, and Medea has no
+    # cdda calls socket()/connect() for CDDB metadata lookup, and AV has no
     # optical disc support anyway.
     }
 

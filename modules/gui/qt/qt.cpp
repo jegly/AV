@@ -399,7 +399,7 @@ vlc_module_begin ()
 #endif
 
     add_bool( "qt-titlebar",
-              /* Medea draws its own title bar on every platform, so it follows
+              /* AV draws its own title bar on every platform, so it follows
                * the selected palette instead of the desktop's window manager
                * theme. */
               false,

@@ -26,7 +26,7 @@ QtObject {
 
     readonly property real scale: MainCtx.intfScaleFactor
 
-    // Medea type ramp. Upstream ran 6/8/10/12/14/16/20/24 with a 12px body,
+    // AV type ramp. Upstream ran 6/8/10/12/14/16/20/24 with a 12px body,
     // which is what makes the stock interface read as cramped and dated. This
     // is a ~1.22 modular scale off a 15px body, so headings separate properly
     // from body text instead of all sitting within a few pixels of each other.
@@ -47,7 +47,7 @@ QtObject {
 
     // Always-dark palette, used by surfaces that sit over video (the player
     // controls, the fullscreen chrome) regardless of the chosen theme. Index 3
-    // is Catppuccin Mocha in medea_palettes; see extras/medea/gen_palettes.py.
+    // is Catppuccin Mocha in av_palettes; see extras/av/gen_palettes.py.
     readonly property int darkPaletteIndex: 3
 
     readonly property SystemPalette darkPalette: SystemPalette {
@@ -76,7 +76,7 @@ QtObject {
     readonly property int border: MainCtx.dp(1, scale)
     readonly property int focus_border: border
 
-    // ---- Medea: radii ------------------------------------------------------
+    // ---- AV: radii ------------------------------------------------------
     // One scale for everything that isn't a legacy per-widget token.
     readonly property real radius_small: MainCtx.dp(8, scale)
     readonly property real radius_normal: MainCtx.dp(12, scale)

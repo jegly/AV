@@ -398,13 +398,13 @@ void SystemPalette::updatePalette()
 {
     m_palettePriv.reset();
 
-    /* Medea ships its own palettes and does not expose VLC's Day/Night/System
-     * schemes, so m_source is an index into medea_palettes rather than a
+    /* AV ships its own palettes and does not expose VLC's Day/Night/System
+     * schemes, so m_source is an index into av_palettes rather than a
      * ColorScheme enumerator. Out-of-range indices (a settings file written by
      * a build with a different palette list) fall back to the first entry. */
-    const int idx = (m_source >= 0 && m_source < medea_palettes_count)
+    const int idx = (m_source >= 0 && m_source < av_palettes_count)
                     ? m_source : 0;
-    makeMedeaPalette(medea_palettes[idx]);
+    makeAvPalette(av_palettes[idx]);
 
     if (m_palettePriv)
     {
@@ -689,7 +689,7 @@ void SystemPalette::makeLightPalette()
     }
 }
 
-void SystemPalette::makeMedeaPalette(const MedeaPalette& p)
+void SystemPalette::makeAvPalette(const AvPalette& p)
 {
     m_isDark = p.isDark;
 

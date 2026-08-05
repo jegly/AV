@@ -18,7 +18,7 @@
 
 #include "firstrunwizard.hpp"
 #include "util/color_scheme_model.hpp"
-#include "style/medeapalettes.hpp"
+#include "style/avpalettes.hpp"
 #include "maininterface/mainctx.hpp"
 #include "dialogs/toolbar/controlbar_profile_model.hpp"
 #include "medialibrary/medialib.hpp"
@@ -68,18 +68,18 @@ FirstRunWizard::FirstRunWizard( qt_intf_t *_p_intf, QWidget *parent)
     /* AV has no System/Day/Night tri-state - it has a flat palette list, so
      * the color scheme page is just a single dropdown of all of them. */
     paletteCombo = new QComboBox( this );
-    for( int i = 0; i < medea_palettes_count; i++ )
-        paletteCombo->addItem( QString::fromUtf8( medea_palettes[i].displayName ), i );
+    for( int i = 0; i < av_palettes_count; i++ )
+        paletteCombo->addItem( QString::fromUtf8( av_palettes[i].displayName ), i );
 
     const auto setExplainerFor = [this]( int row ) {
-        if( row < 0 || row >= medea_palettes_count )
+        if( row < 0 || row >= av_palettes_count )
             return;
         ui.explainerLabel->setText( qtr( "<i>AV will use the %1 theme.</i>" )
-                                    .arg( QString::fromUtf8( medea_palettes[row].displayName ) ) );
+                                    .arg( QString::fromUtf8( av_palettes[row].displayName ) ) );
     };
 
     {
-        const int defaultIdx = medea_palette_index( MEDEA_DEFAULT );
+        const int defaultIdx = av_palette_index( AV_DEFAULT );
         if( defaultIdx >= 0 )
             paletteCombo->setCurrentIndex( defaultIdx );
         setExplainerFor( paletteCombo->currentIndex() );
@@ -156,7 +156,7 @@ void FirstRunWizard::finish()
 
     /* Layout Page settings */
     config_PutInt( "qt-menubar", ui.layoutGroup->checkedId() );
-    /* Medea always draws its own title bar so the window chrome follows the
+    /* AV always draws its own title bar so the window chrome follows the
      * palette; the layout choice must not switch it back to the system one. */
     config_PutInt( "qt-titlebar", 0 );
 
@@ -284,7 +284,7 @@ void FirstRunWizard::reject()
     config_PutInt( "qt-privacy-ask", 0 );
 
     /* Colour Page settings */
-    p_intf->p_mi->getColorScheme()->setCurrentIndex( medea_palette_index( MEDEA_DEFAULT ) );
+    p_intf->p_mi->getColorScheme()->setCurrentIndex( av_palette_index( AV_DEFAULT ) );
 
     /* Layout Page settings */
     config_PutInt( "qt-menubar", 0 );

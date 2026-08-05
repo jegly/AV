@@ -262,7 +262,7 @@ FocusScope {
 
                     anchors.fill: parent
 
-                    // The window surface is opaque in Medea (see
+                    // The window surface is opaque in AV (see
                     // compositor_wayland.cpp), so this item has to actually
                     // paint in order to punch the transparent hole the video
                     // subsurface shows through. Upstream could leave this off

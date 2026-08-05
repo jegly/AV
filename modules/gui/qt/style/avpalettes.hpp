@@ -1,7 +1,7 @@
 /*****************************************************************************
- * medeapalettes.hpp : Medea colour palettes
+ * avpalettes.hpp : AV colour palettes
  *****************************************************************************
- * Copyright (C) 2026 Medea authors
+ * Copyright (C) 2026 AV authors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
  *****************************************************************************/
 
 /* GENERATED FILE - DO NOT EDIT BY HAND.
- * Regenerate with extras/medea/gen_palettes.py, which reads the palette sources in
+ * Regenerate with extras/av/gen_palettes.py, which reads the palette sources in
  * "theme port for android apps". Edit the sources or the generator instead.
  *
  * Layer names follow GLASS_MODE_INTEGRATION.md: base is the window body,
@@ -27,12 +27,12 @@
  * cards and popovers. Glass mode applies its alpha tiers to these four.
  */
 
-#ifndef VLC_MEDEAPALETTES_HPP
-#define VLC_MEDEAPALETTES_HPP
+#ifndef VLC_AVPALETTES_HPP
+#define VLC_AVPALETTES_HPP
 
 #include <QtGui/qrgb.h>
 
-struct MedeaPalette
+struct AvPalette
 {
     const char* key;
     const char* displayName;
@@ -57,7 +57,7 @@ struct MedeaPalette
     QRgb neutral;
 };
 
-static const MedeaPalette medea_palettes[] =
+static const AvPalette av_palettes[] =
 {
     /* ---- Catppuccin ---- */
     { "catppuccin_latte", "Catppuccin Latte", false, 0xFFEFF1F5, 0xFFE6E9EF, 0xFFDCE0E8, 0xFFCCD0DA, 0xFF4C4F69, 0xFF5C5F77, 0xFF1E66F5, 0xFF8839EF, 0xFF179299, 0xFFD20F39, 0xFF40A02B, 0xFFDF8E1D },
@@ -117,19 +117,19 @@ static const MedeaPalette medea_palettes[] =
     { "ptyxis_xterm", "XTerm", true, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF111111, 0xFFFFFFFF, 0xFFA5A5A5, 0xFF5C5CFF, 0xFFFF00FF, 0xFF00FFFF, 0xFFFF0000, 0xFF00FF00, 0xFFFFFF00 },
 };
 
-static const int medea_palettes_count =
-    (int)(sizeof(medea_palettes) / sizeof(medea_palettes[0]));
+static const int av_palettes_count =
+    (int)(sizeof(av_palettes) / sizeof(av_palettes[0]));
 
 /* Look a palette up by its stable key. Call sites should use this rather than
  * hardcoding an index, so that reordering or adding palettes cannot silently
  * repoint them at the wrong theme. Returns -1 when the key is unknown. */
-static inline int medea_palette_index(const char* key)
+static inline int av_palette_index(const char* key)
 {
     if (!key)
         return -1;
-    for (int i = 0; i < medea_palettes_count; ++i)
+    for (int i = 0; i < av_palettes_count; ++i)
     {
-        const char* a = medea_palettes[i].key;
+        const char* a = av_palettes[i].key;
         const char* b = key;
         while (*a && *a == *b) { ++a; ++b; }
         if (*a == '\0' && *b == '\0')
@@ -139,8 +139,8 @@ static inline int medea_palette_index(const char* key)
 }
 
 /* Defaults referenced from the interface. */
-#define MEDEA_DEFAULT       "ptyxis_nord"
-#define MEDEA_DEFAULT_DARK  "ptyxis_nord"
-#define MEDEA_DEFAULT_LIGHT "catppuccin_latte"
+#define AV_DEFAULT       "ptyxis_nord"
+#define AV_DEFAULT_DARK  "ptyxis_nord"
+#define AV_DEFAULT_LIGHT "catppuccin_latte"
 
-#endif // VLC_MEDEAPALETTES_HPP
+#endif // VLC_AVPALETTES_HPP

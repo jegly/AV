@@ -19,7 +19,7 @@
 #include "color_scheme_model.hpp"
 
 #include "qt.hpp"
-#include "style/medeapalettes.hpp"
+#include "style/avpalettes.hpp"
 
 namespace {
 
@@ -31,10 +31,10 @@ namespace {
 QVector<ColorSchemeModel::Item> buildPaletteList()
 {
     QVector<ColorSchemeModel::Item> list;
-    list.reserve(medea_palettes_count);
-    for (int i = 0; i < medea_palettes_count; ++i)
+    list.reserve(av_palettes_count);
+    for (int i = 0; i < av_palettes_count; ++i)
         list.append(ColorSchemeModel::Item {
-            QString::fromUtf8(medea_palettes[i].displayName), i });
+            QString::fromUtf8(av_palettes[i].displayName), i });
     return list;
 }
 

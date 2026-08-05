@@ -1,5 +1,5 @@
 #!/bin/sh
-# Configure Medea: a local-only audio/video player.
+# Configure AV: a local-only audio/video player.
 #
 # Two layers keep the network out. This is the first: every module that opens a
 # socket, serves, discovers, streams or casts is left out of the build. The
@@ -7,7 +7,7 @@
 # snapd in the kernel and cannot be bypassed by a bug in a demuxer. Neither
 # layer is sufficient alone; together they are.
 #
-# Usage:  extras/medea/configure-medea.sh [builddir] [extra meson args...]
+# Usage:  extras/av/configure-av.sh [builddir] [extra meson args...]
 set -e
 
 BUILDDIR=${1:-build}
@@ -52,7 +52,7 @@ REMOTE="
 "
 
 # ------------------------------------------------------------------- encoders
-# Medea plays; it does not encode or transcode. Dropping the encoders removes a
+# AV plays; it does not encode or transcode. Dropping the encoders removes a
 # large amount of attack surface that no playback path can reach.
 ENCODERS="
 -Dx264=disabled
@@ -91,7 +91,7 @@ CAPTURE="
 "
 
 # ----------------------------------------------------------------- other UIs
-# Medea has exactly one interface. skins2 in particular parses untrusted XML
+# AV has exactly one interface. skins2 in particular parses untrusted XML
 # skin archives.
 UIS="
 -Dskins2=disabled
@@ -123,14 +123,14 @@ MISC="
 "
 
 # ----------------------------------------------------------------- x86-64 only
-# Medea targets 64-bit Intel/AMD desktops only, so the SIMD paths are switched
+# AV targets 64-bit Intel/AMD desktops only, so the SIMD paths are switched
 # on unconditionally rather than probed.
 #
 # x86-64-v3 means AVX2 + BMI2 + FMA, i.e. Haswell (2013) and newer. A 10th-gen
-# Intel laptop is well inside that. Set MEDEA_MARCH=x86-64-v2 for pre-2013
-# hardware, or MEDEA_MARCH=native to tune for this exact machine (in which case
+# Intel laptop is well inside that. Set AV_MARCH=x86-64-v2 for pre-2013
+# hardware, or AV_MARCH=native to tune for this exact machine (in which case
 # the build is not portable to another CPU).
-MARCH=${MEDEA_MARCH:-x86-64-v3}
+MARCH=${AV_MARCH:-x86-64-v3}
 
 ARCH="
 -Dsse=enabled

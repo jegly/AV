@@ -1025,7 +1025,7 @@ cdata.set_quoted('PACKAGE',             vlc_package_name)
 cdata.set_quoted('PACKAGE_NAME',        vlc_package_name)
 cdata.set_quoted('PACKAGE_STRING',      f'@vlc_package_name@ @vlc_version@')
 cdata.set_quoted('COPYRIGHT_YEARS',     vlc_copyright_years)
-cdata.set_quoted('COPYRIGHT_MESSAGE',   f'Copyright © @vlc_copyright_years@ the VideoLAN team and Medea contributors')
+cdata.set_quoted('COPYRIGHT_MESSAGE',   f'Copyright © @vlc_copyright_years@ the VideoLAN team and AV contributors')
 
 # Compiler and build system info
 cdata.set_quoted('VLC_COMPILER',        cc.get_id() + ' ' + cc.version())

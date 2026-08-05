@@ -172,7 +172,7 @@ FFMPEGCONF += --target-os=linux --enable-pic
 # files rather than .asm.
 FFMPEGCONF += --extra-cflags=-fvisibility=hidden
 
-# Medea decoder allowlist: upstream ffmpeg builds 526 decoders; a desktop
+# AV decoder allowlist: upstream ffmpeg builds 526 decoders; a desktop
 # audio/video player needs a small fraction of that (common video/audio
 # codecs, subtitle text formats, embedded cover art images). Everything else
 # here is either a legacy video-game cutscene format (bink, smacker, roq,

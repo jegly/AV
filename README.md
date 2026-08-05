@@ -84,7 +84,7 @@ A `.deb` is published on the [Releases](../../releases) page.
 Building uses the same meson/ninja pipeline as upstream VLC, through a project-specific configure wrapper:
 
 ```sh
-./extras/medea/configure-medea.sh build
+./extras/av/configure-av.sh build
 ninja -C build
 DESTDIR=/path/to/stage ninja -C build install
 ```

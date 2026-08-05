@@ -301,7 +301,7 @@ subdir('access')
 subdir('demux')
 
 # access_output modules
-# Medea: stream output, muxing and the access_output writers exist to send
+# AV: stream output, muxing and the access_output writers exist to send
 # media somewhere else. A local player needs none of them, and stream_out in
 # particular pulls srtp_dep from the access/rtp subdir we remove.
 if get_option('stream_outputs')

@@ -304,7 +304,7 @@ bool CompositorWayland::unloadWaylandModule()
 #ifdef QT_WAYLAND_HAS_CUSTOM_MARGIN_SUPPORT
 void CompositorWayland::adjustQuickWindowMask()
 {
-    /* Medea: never mask the surface.
+    /* AV: never mask the surface.
      *
      * Upstream masks the toplevel to inset the CSD shadow margins, and only
      * re-computes the mask from windowExtendedMarginChanged -> widthChanged /

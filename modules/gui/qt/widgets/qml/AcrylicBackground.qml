@@ -34,7 +34,7 @@ ViewBlockingRectangle {
     // see-through panel with the desktop showing through - and where the video
     // surface does not cover the window, a transparent strip.
     //
-    // Medea paints these surfaces opaque. Controlled translucency belongs to
+    // AV paints these surfaces opaque. Controlled translucency belongs to
     // glass mode, which supplies its own backdrop blur rather than assuming
     // the compositor provides one.
     readonly property bool usingAcrylic: false

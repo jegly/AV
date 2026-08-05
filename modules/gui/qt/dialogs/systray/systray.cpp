@@ -49,29 +49,29 @@ VLCSystray::VLCSystray(MainCtx* ctx, QObject* parent)
      *
      * Building the icon from explicit pixmaps forces Qt to send the image data
      * itself, so the tray renders correctly regardless of the host's theme. */
-    QIcon iconMedea = QIcon::fromTheme( QStringLiteral( "av" ) );
+    QIcon iconAv = QIcon::fromTheme( QStringLiteral( "av" ) );
 
-    if( iconMedea.isNull() || iconMedea.availableSizes().isEmpty() )
+    if( iconAv.isNull() || iconAv.availableSizes().isEmpty() )
     {
-        iconMedea = QIcon();
+        iconAv = QIcon();
         const QIcon source( QStringLiteral( ":/logo/av.svg" ) );
         for( int size : { 16, 22, 24, 32, 48, 64, 128, 256 } )
         {
             const QPixmap pm = source.pixmap( QSize( size, size ) );
             if( !pm.isNull() )
-                iconMedea.addPixmap( pm );
+                iconAv.addPixmap( pm );
         }
 
-        if( iconMedea.availableSizes().isEmpty() )
+        if( iconAv.availableSizes().isEmpty() )
             msg_Warn( m_intf, "could not build the AV tray icon from "
                               ":/logo/av.svg" );
     }
 
-    setIcon( iconMedea );
+    setIcon( iconAv );
     setToolTip( qtr( "AV" ));
 
     m_menu = std::make_unique<VLCMenu>( qtr( "AV"), m_intf );
-    m_menu->setIcon( iconMedea );
+    m_menu->setIcon( iconAv );
     setContextMenu(m_menu.get());
     update();
     show();

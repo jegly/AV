@@ -95,7 +95,7 @@ FocusScope {
         Image {
             id: logo
 
-            // Medea's mark, not VideoLAN's cone - see BannerCone.qml.
+            // AV's mark, not VideoLAN's cone - see BannerCone.qml.
             source: "qrc:///logo/av.svg"
 
             anchors.centerIn: parent

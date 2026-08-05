@@ -265,7 +265,7 @@ public:
             m_model.children.push_back(std::move(musicEntry));
         }
 
-        /* Medea has no Browse or Discover: both are network browsers and their
+        /* AV has no Browse or Discover: both are network browsers and their
          * views, models and QML were removed from the build. */
 
         m_model.visibleChildren = m_model.children.size();

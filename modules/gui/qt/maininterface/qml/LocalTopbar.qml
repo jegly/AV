@@ -145,7 +145,7 @@ T.ToolBar {
                     Navigation.rightItem: playlistBtn
                 }
 
-                // Medea shows no product mark in its own title bar - the
+                // AV shows no product mark in its own title bar - the
                 // window is already identified by the launcher and the tray.
             }
         }

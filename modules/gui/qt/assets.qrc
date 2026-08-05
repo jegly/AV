@@ -1,6 +1,6 @@
 <RCC>
     <!-- VideoLAN's cone artwork (vlc*.png, xmas/aprilfools/kb variants) and
-         pixmaps/misc/cone.svg are deliberately not bundled here. Medea is an
+         pixmaps/misc/cone.svg are deliberately not bundled here. AV is an
          independent fork and does not ship VideoLAN's trademarked mark. -->
     <qresource prefix="/logo">
         <file alias="av.svg">../../../share/icons/av.svg</file>

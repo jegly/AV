@@ -30,8 +30,8 @@ class ColorSchemeModel : public QAbstractListModel
     Q_PROPERTY(int scheme READ currentScheme NOTIFY currentChanged FINAL)
 
 public:
-    /* Medea replaces VLC's System/Day/Night schemes with its own palette set,
-     * so a "scheme" is an index into medea_palettes (see medeapalettes.hpp).
+    /* AV replaces VLC's System/Day/Night schemes with its own palette set,
+     * so a "scheme" is an index into av_palettes (see avpalettes.hpp).
      * The alias is kept so existing ColorSchemeModel::ColorScheme references
      * still compile. */
     using ColorScheme = int;

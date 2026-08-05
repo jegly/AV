@@ -146,7 +146,7 @@ parts:
       make -j ${CRAFT_PARALLEL_BUILD_COUNT}
       cd ../..
 
-      extras/medea/configure-medea.sh build \
+      extras/av/configure-av.sh build \
           --prefix=/usr \
           -Dmerge-ffmpeg=true
       ninja -C build -j ${CRAFT_PARALLEL_BUILD_COUNT}
@@ -310,7 +310,7 @@ parts:
   wrapper:
     plugin: dump
     after: [av]
-    source: extras/medea
+    source: extras/av
     organize:
       av-snap-wrapper.sh: usr/bin/av-snap-wrapper.sh
     stage:

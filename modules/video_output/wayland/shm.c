@@ -52,7 +52,7 @@ typedef struct vout_display_sys_t
     struct wp_viewporter *viewporter;
     struct wp_viewport *viewport;
 
-    /* Medea: display-sized scratch buffers used to pad the picture out to the
+    /* AV: display-sized scratch buffers used to pad the picture out to the
      * full display area (see Prepare). This is a small rotating pool, not one
      * shared buffer: a single shared buffer was overwritten with the next
      * frame's pixels while the compositor could still be reading the previous
@@ -97,7 +97,7 @@ static const struct wl_buffer_listener buffer_cbs =
     buffer_release_cb,
 };
 
-/* Medea: (re)allocate the rotating padding buffer pool for a given display
+/* AV: (re)allocate the rotating padding buffer pool for a given display
  * size. Allocates MAX_PICTURES independent slots inside one mmap/pool so
  * consecutive frames never share backing memory (see the struct comment). */
 static int PadEnsure(vout_display_t *vd, unsigned width, unsigned height)
@@ -192,7 +192,7 @@ static void Prepare(vout_display_t *vd, picture_t *pic,
     struct wl_shm_pool *pool;
     struct wl_buffer *buf;
 
-    /* Medea: upstream attached a buffer covering only the video rectangle and
+    /* AV: upstream attached a buffer covering only the video rectangle and
      * then damaged the whole display area. Every pixel outside the video had no
      * buffer content at all, so it composited as fully transparent - the
      * desktop showed through beside pillarboxed video, during resizes, and
@@ -475,7 +475,7 @@ static int Open(vout_display_t *vd,
 
     struct wl_surface *surface = sys->embed->handle.wl;
 
-    /* Medea: never take the compositor's scaling path here.
+    /* AV: never take the compositor's scaling path here.
      *
      * When wp_viewporter is available, this module lets the compositor scale
      * the picture buffer up to vd->place (compositor-side scale, cheap) and

@@ -869,7 +869,7 @@ SPrefsPanel::SPrefsPanel( qt_intf_t *_p_intf, QWidget *_parent,
 
             QObject::connect( ui.toolbarEditor, &QAbstractButton::clicked, provider, &DialogsProvider::showToolbarEditorDialog);
 
-            /* Medea always uses its own title bar; the toggle would be a
+            /* AV always uses its own title bar; the toggle would be a
              * no-op, so it is hidden rather than left lying to the user. */
             ui.titleBarCheckBox->setVisible( false );
 
