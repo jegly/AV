@@ -1,0 +1,23 @@
+Package: av
+Version: @VERSION@
+Section: video
+Priority: optional
+Architecture: @ARCH@
+Installed-Size: @INSTALLED_SIZE@
+Maintainer: jegly <jjjegly@gmail.com>
+Depends: libc6, libgcc-s1, libstdc++6, libasound2t64, libdrm2, libegl1, libfontconfig1, libgl1, libglib2.0-0t64, libglx0, libharfbuzz0b, libnotify4, libpulse0, libsqlite3-0, libudev1, libva-drm2, libva-wayland2, libva-x11-2, libva2, libvdpau1, libvulkan1, libwayland-client0, libwayland-cursor0, libwayland-egl1, libx11-6, libx11-xcb1, libxcb-dri3-0, libxcb-keysyms1, libxcb-randr0, libxcb1, libxcomposite1, libxcursor1, libxext6, libxfixes3, libxi6, libxinerama1, libxkbcommon0, libxkbcommon-x11-0, libxrandr2, zlib1g, libqt6core6t64, libqt6gui6, libqt6widgets6, libqt6qml6, libqt6quick6, libqt6quickcontrols2-6, libqt6svg6, qt6-svg-plugins, libqt6opengl6, libqt6network6, qt6-qpa-plugins, qml6-module-qtquick, qml6-module-qtquick-controls, qml6-module-qtquick-templates, qml6-module-qtquick-layouts, qml6-module-qtqml-workerscript
+Recommends: pipewire, dbus-x11, fonts-freefont-ttf
+Homepage: https://github.com/jegly/AV
+Description: local-only audio and video player
+ AV plays audio and video files from your own machine and nothing else.
+ It does not stream, cast, serve, browse network shares, fetch metadata,
+ or check for updates.
+ .
+ Every module capable of opening a network socket is removed from the
+ build, so no network access is possible regardless of what the
+ application does. AV is an independent fork of VLC and is not
+ affiliated with or endorsed by VideoLAN.
+ .
+ Requires an x86-64-v3 CPU (Haswell, 2013, or newer): the build targets
+ AVX2/BMI2/FMA and will abort with an illegal instruction on older
+ hardware.
