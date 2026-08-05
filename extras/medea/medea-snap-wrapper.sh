@@ -6,9 +6,6 @@ unset VLC_PLUGIN_PATH
 
 export KDE_FORK_SLAVES=1
 
-# libva + wayland is broken against the gpu2404 base snap; force xcb.
-export QT_QPA_PLATFORM=xcb
-
 # So the host shell can resolve the tray icon by name over StatusNotifierItem.
 export XDG_DATA_DIRS="$SNAP/usr/share:$XDG_DATA_DIRS"
 

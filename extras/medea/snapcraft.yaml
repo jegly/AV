@@ -55,7 +55,15 @@ apps:
     extensions:
       - gpu
     environment:
-      QT_QPA_PLATFORM: xcb
+      # Do NOT force QT_QPA_PLATFORM=xcb. Forcing xcb makes VLC's Qt GUI use
+      # its X11 compositor path for embedding the video surface, which goes
+      # through the X11 Composite/Damage extensions over XWayland - this is
+      # what was causing video to open in its own separate top-level window
+      # instead of embedding in the player UI. Real upstream VLC 4's snap
+      # (`snap connections vlc` on the --edge channel, same major version as
+      # this fork) does not force a platform and ships both `wayland` and
+      # `x11` plugs; on a Wayland session Qt picks wayland by default, which
+      # embeds video via a native wl_subsurface instead.
       QT_PLUGIN_PATH: $SNAP/usr/lib/x86_64-linux-gnu/qt6/plugins
       QML2_IMPORT_PATH: $SNAP/usr/lib/x86_64-linux-gnu/qt6/qml
     common-id: org.medea.player
@@ -77,6 +85,8 @@ apps:
       # without it). pulseaudio grants the actual pulse-protocol socket VLC's
       # audio module connects to, which is a different interface than
       # pipewire's native-protocol socket ("Connection refused" without it).
+      # wayland was also missing - needed for native video-surface embedding
+      # on a Wayland session, see the QT_QPA_PLATFORM comment above.
       - audio-playback
       - desktop-legacy
       - home
@@ -85,6 +95,7 @@ apps:
       - removable-media
       - screen-inhibit-control
       - pipewire
+      - wayland
       - x11
     slots:
       - mpris
@@ -146,7 +157,11 @@ parts:
       install -Dm644 share/icons/medea.svg \
           ${CRAFT_PART_INSTALL}/usr/share/icons/hicolor/scalable/apps/medea.svg
       cp share/icons/medea.svg ${CRAFT_PART_INSTALL}/medea.svg
-      cp ${CRAFT_PART_INSTALL}/usr/share/applications/medea.desktop \
+      # Move (not copy) this out of usr/share/applications/: if the original
+      # stays there too, snapd's desktop-file export finds BOTH it and the
+      # rewritten root-level copy below, producing two separate launcher
+      # icons for one snap.
+      mv ${CRAFT_PART_INSTALL}/usr/share/applications/medea.desktop \
           ${CRAFT_PART_INSTALL}/medea.desktop
       sed -i 's|^Icon=.*|Icon=/medea.svg|' ${CRAFT_PART_INSTALL}/medea.desktop
       sed -i 's|TryExec=.*|TryExec=/snap/bin/medea|' ${CRAFT_PART_INSTALL}/medea.desktop
