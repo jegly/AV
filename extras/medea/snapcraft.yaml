@@ -1,4 +1,4 @@
-name: medea
+name: av
 adopt-info: medea
 grade: stable
 base: core26
@@ -32,7 +32,7 @@ hooks:
       - desktop
 
 apps:
-  medea:
+  av:
     desktop: medea.desktop
     command: usr/bin/medea-snap-wrapper.sh
     # No kde-neon-6 here: `snapcraft extensions` confirms it supports only
