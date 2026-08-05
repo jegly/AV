@@ -247,10 +247,12 @@ parts:
       - qml6-module-qtquick-templates
       - qml6-module-qtquick-layouts
       - qml6-module-qtqml-workerscript
-    stage:
-      - usr/lib/x86_64-linux-gnu/libQt6*
-      - usr/lib/x86_64-linux-gnu/qt6/plugins/*
-      - usr/lib/x86_64-linux-gnu/qt6/qml/*
+    # No stage: filter here deliberately. Qt6's packages pull in dozens of
+    # transitive libraries (fontconfig, harfbuzz, the XCB helper libs the
+    # XCB platform plugin dlopens, EGL/GLX, wayland-client, xkbcommon-x11,
+    # ICU) that a hand-curated allowlist kept missing one at a time, each
+    # one only surfacing as a runtime crash. Trust what stage-packages
+    # already correctly resolved instead of re-filtering it.
 
   wrapper:
     plugin: dump
