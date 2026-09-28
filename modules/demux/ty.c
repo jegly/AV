@@ -229,19 +229,19 @@ typedef struct
 
   xds_t       xds;
 
-  int             i_cur_chunk;
+  uint64_t        i_cur_chunk;
   int             i_stuff_cnt;
-  size_t          i_stream_size;      /* size of input stream (if known) */
+  uint64_t        i_stream_size;      /* size of input stream (if known) */
   //uint64_t        l_program_len;      /* length of this stream in msec */
   bool      b_seekable;         /* is this stream seekable? */
   bool      b_have_master;      /* are master chunks present? */
   tivo_type_t     tivo_type;          /* tivo type (SA / DTiVo) */
   tivo_series_t   tivo_series;        /* Series1 or Series2 */
   tivo_audio_t    audio_type;         /* AC3 or MPEG */
-  int             i_Pes_Length;       /* Length of Audio PES header */
-  int             i_Pts_Offset;       /* offset into audio PES of PTS */
+  unsigned        i_Pes_Length;       /* Length of Audio PES header */
+  unsigned        i_Pts_Offset;       /* offset into audio PES of PTS */
   uint8_t         pes_buffer[20];     /* holds incomplete pes headers */
-  int             i_pes_buf_cnt;      /* how many bytes in our buffer */
+  unsigned        i_pes_buf_cnt;      /* how many bytes in our buffer */
   size_t          l_ac3_pkt_size;     /* len of ac3 pkt we've seen so far */
   uint64_t        l_last_ty_pts;      /* last TY timestamp we've seen */
   //vlc_tick_t      l_last_ty_pts_sync; /* audio PTS at time of last TY PTS */
@@ -254,9 +254,9 @@ typedef struct
   vlc_tick_t      lastVideoPTS;
 
   ty_rec_hdr_t    *rec_hdrs;          /* record headers array */
-  int             i_cur_rec;          /* current record in this chunk */
-  int             i_num_recs;         /* number of recs in this chunk */
-  int             i_seq_rec;          /* record number where seq start is */
+  size_t          i_cur_rec;          /* current record in this chunk */
+  size_t          i_num_recs;         /* number of recs in this chunk */
+  size_t          i_seq_rec;          /* record number where seq start is */
   ty_seq_table_t  *seq_table;         /* table of SEQ entries from mstr chk */
   bool      eof;
   bool      b_first_chunk;
@@ -270,7 +270,7 @@ static int ty_stream_seek_pct(demux_t *p_demux, double seek_pct);
 static int ty_stream_seek_time(demux_t *, uint64_t);
 
 static ty_rec_hdr_t *parse_chunk_headers( const uint8_t *p_buf,
-                                          int i_num_recs, int *pi_payload_size);
+                                          size_t i_num_recs, int *pi_payload_size);
 static int probe_stream(demux_t *p_demux);
 static int analyze_chunk(demux_t *p_demux, const uint8_t *p_chunk);
 static int  parse_master(demux_t *p_demux);
@@ -506,7 +506,6 @@ static int Control(demux_t *p_demux, int i_query, va_list args)
 {
     demux_sys_t *p_sys = p_demux->p_sys;
     double f, *pf;
-    int64_t i64;
 
     /*msg_Info(p_demux, "control cmd %d", i_query);*/
     switch( i_query )
@@ -517,10 +516,10 @@ static int Control(demux_t *p_demux, int i_query, va_list args)
 
     case DEMUX_GET_POSITION:
         /* arg is 0.0 - 1.0 percent of overall file position */
-        if( ( i64 = p_sys->i_stream_size ) > 0 )
+        if( p_sys->i_stream_size != 0 )
         {
             pf = va_arg( args, double* );
-            *pf = ((double)1.0) * vlc_stream_Tell( p_demux->s ) / (double) i64;
+            *pf = ((double)1.0) * vlc_stream_Tell( p_demux->s ) / (double) p_sys->i_stream_size;
             return VLC_SUCCESS;
         }
         return VLC_EGENERIC;
@@ -529,7 +528,7 @@ static int Control(demux_t *p_demux, int i_query, va_list args)
         /* arg is 0.0 - 1.0 percent of overall file position */
         f = va_arg( args, double );
         /* msg_Dbg(p_demux, "Control - set position to %2.3f", f); */
-        if ((i64 = p_sys->i_stream_size) > 0)
+        if (p_sys->i_stream_size != 0)
             return ty_stream_seek_pct(p_demux, f);
         return VLC_EGENERIC;
     case DEMUX_GET_TIME:
@@ -604,12 +603,11 @@ static int find_es_header( const uint8_t *header,
  *    -1 partial PES hdr found, no audio data found
  *     0 otherwise (complete PES found, pts extracted, pts set, buffer adjusted) */
 /* TODO: HD support -- nothing known about those streams */
-static int check_sync_pes( demux_t *p_demux, block_t *p_block,
-                           int32_t offset, int32_t rec_len )
+static int check_sync_pes( demux_t *p_demux, block_t *p_block, int32_t offset )
 {
     demux_sys_t *p_sys = p_demux->p_sys;
 
-    if ( offset < 0 || offset + p_sys->i_Pes_Length > rec_len )
+    if ( offset < 0 || (unsigned)offset + p_sys->i_Pes_Length > p_block->i_buffer )
     {
         /* entire PES header not present */
         msg_Dbg( p_demux, "PES header at %d not complete in record. storing.",
@@ -620,24 +618,28 @@ static int check_sync_pes( demux_t *p_demux, block_t *p_block,
             /* no header found, fake some 00's (this works, believe me) */
             memset( p_sys->pes_buffer, 0, 4 );
             p_sys->i_pes_buf_cnt = 4;
-            if( rec_len > 4 )
-                msg_Err( p_demux, "PES header not found in record of %d bytes!",
-                         rec_len );
+            if( p_block->i_buffer > 4 )
+                msg_Err( p_demux, "PES header not found in record of %zu bytes!",
+                         p_block->i_buffer );
             return -1;
         }
         /* copy the partial pes header we found */
+        p_sys->i_pes_buf_cnt = p_block->i_buffer - offset;
         memcpy( p_sys->pes_buffer, p_block->p_buffer + offset,
-                rec_len - offset );
-        p_sys->i_pes_buf_cnt = rec_len - offset;
+                p_sys->i_pes_buf_cnt );
 
         if( offset > 0 )
         {
             /* PES Header was found, but not complete, so trim the end of this record */
-            p_block->i_buffer -= rec_len - offset;
+            p_block->i_buffer = (unsigned) offset;
             return 1;
         }
         return -1;    /* partial PES, no audio data */
     }
+
+    if( p_block->i_buffer < (unsigned)offset + p_sys->i_Pts_Offset + 5 )
+        return -1;
+
     /* full PES header present, extract PTS */
     p_sys->lastAudioPTS = VLC_TICK_0 + get_pts( &p_block->p_buffer[ offset +
                                    p_sys->i_Pts_Offset ] );
@@ -645,7 +647,7 @@ static int check_sync_pes( demux_t *p_demux, block_t *p_block,
     /*msg_Dbg(p_demux, "Audio PTS %"PRId64, p_sys->lastAudioPTS );*/
     /* adjust audio record to remove PES header */
     memmove(p_block->p_buffer + offset, p_block->p_buffer + offset +
-            p_sys->i_Pes_Length, rec_len - p_sys->i_Pes_Length);
+            p_sys->i_Pes_Length, p_block->i_buffer - offset - p_sys->i_Pes_Length);
     p_block->i_buffer -= p_sys->i_Pes_Length;
 #if 0
     msg_Dbg(p_demux, "pes hdr removed; buffer len=%d and has "
@@ -667,7 +669,6 @@ static int DemuxRecVideo( demux_t *p_demux, ty_rec_hdr_t *rec_hdr, block_t *p_bl
 {
     demux_sys_t *p_sys = p_demux->p_sys;
     const int subrec_type = rec_hdr->subrec_type;
-    const long l_rec_size = rec_hdr->l_rec_size;    // p_block_in->i_buffer might be better
     int esOffset1;
     int i;
 
@@ -690,17 +691,23 @@ static int DemuxRecVideo( demux_t *p_demux, ty_rec_hdr_t *rec_hdr, block_t *p_bl
 #endif
     //if( subrec_type == 0x06 || subrec_type == 0x07 )
     if( subrec_type != 0x02 && subrec_type != 0x0c &&
-        subrec_type != 0x08 && l_rec_size > 4 )
+        subrec_type != 0x08 && p_block_in->i_buffer > 4 )
     {
         /* get the PTS from this packet if it has one.
          * on S1, only 0x06 has PES.  On S2, however, most all do.
          * Do NOT Pass the PES Header to the MPEG2 codec */
-        size_t search_len = __MIN(l_rec_size - sizeof(ty_VideoPacket), 5);
+        size_t search_len = __MIN(p_block_in->i_buffer - sizeof(ty_VideoPacket), 5);
         esOffset1 = find_es_header( ty_VideoPacket, p_block_in->p_buffer, p_block_in->i_buffer, search_len );
-        if( esOffset1 != -1 )
+        if( esOffset1 != -1 &&
+            (size_t)esOffset1 + VIDEO_PTS_OFFSET + 5 <= p_block_in->i_buffer ) // to read the PTS
         {
             //msg_Dbg(p_demux, "Video PES hdr in pkt type 0x%02x at offset %d",
                 //subrec_type, esOffset1);
+            if(p_block_in->i_buffer < (unsigned)esOffset1 + VIDEO_PTS_OFFSET + 5)
+            {
+                block_Release(p_block_in);
+                return -1;
+            }
             p_sys->lastVideoPTS = VLC_TICK_0 + get_pts(
                     &p_block_in->p_buffer[ esOffset1 + VIDEO_PTS_OFFSET ] );
             /*msg_Dbg(p_demux, "Video rec %d PTS %"PRId64, p_sys->i_cur_rec,
@@ -709,12 +716,12 @@ static int DemuxRecVideo( demux_t *p_demux, ty_rec_hdr_t *rec_hdr, block_t *p_bl
                 /* if we found a PES, and it's not type 6, then we're S2 */
                 /* The packet will have video data (& other headers) so we
                  * chop out the PES header and send the rest */
-                if (l_rec_size >= VIDEO_PES_LENGTH) {
+                if (p_block_in->i_buffer >= VIDEO_PES_LENGTH + (unsigned) esOffset1) {
                     p_block_in->p_buffer += VIDEO_PES_LENGTH + esOffset1;
                     p_block_in->i_buffer -= VIDEO_PES_LENGTH + esOffset1;
                 } else {
                     msg_Dbg(p_demux, "video rec type 0x%02x has short PES"
-                        " (%ld bytes)", subrec_type, l_rec_size);
+                        " (%zu bytes)", subrec_type, p_block_in->i_buffer);
                     /* nuke this block; it's too short, but has PES marker */
                     p_block_in->i_buffer = 0;
                 }
@@ -740,7 +747,7 @@ static int DemuxRecVideo( demux_t *p_demux, ty_rec_hdr_t *rec_hdr, block_t *p_bl
          * (if we have enough data) */
         /* Some ty files don't have this bit set
          * and it causes problems */
-        if (subrec_type == 0x0c && l_rec_size >= 6)
+        if (subrec_type == 0x0c && p_block_in->i_buffer >= 6)
             p_block_in->p_buffer[5] |= 0x08;
         /* store the TY PTS if there is one */
         if (subrec_type == 0x07) {
@@ -829,7 +836,6 @@ static int DemuxRecAudio( demux_t *p_demux, ty_rec_hdr_t *rec_hdr, block_t *p_bl
 {
     demux_sys_t *p_sys = p_demux->p_sys;
     const int subrec_type = rec_hdr->subrec_type;
-    const long l_rec_size = rec_hdr->l_rec_size;
     int esOffset1;
 
     assert( rec_hdr->rec_type == 0xc0 );
@@ -850,18 +856,18 @@ static int DemuxRecAudio( demux_t *p_demux, ty_rec_hdr_t *rec_hdr, block_t *p_bl
          */
 
         /* continue PES if previous was incomplete */
-        if (p_sys->i_pes_buf_cnt > 0)
+        if (p_sys->i_pes_buf_cnt > 0 && p_sys->i_Pes_Length >= p_sys->i_pes_buf_cnt)
         {
-            const int i_need = p_sys->i_Pes_Length - p_sys->i_pes_buf_cnt;
+            const unsigned i_need = p_sys->i_Pes_Length - p_sys->i_pes_buf_cnt;
 
             msg_Dbg(p_demux, "continuing PES header");
             /* do we have enough data to complete? */
-            if (i_need >= l_rec_size)
+            if (i_need >= p_block_in->i_buffer)
             {
                 /* don't have complete PES hdr; save what we have and return */
                 memcpy(&p_sys->pes_buffer[p_sys->i_pes_buf_cnt],
-                        p_block_in->p_buffer, l_rec_size);
-                p_sys->i_pes_buf_cnt += l_rec_size;
+                        p_block_in->p_buffer, p_block_in->i_buffer);
+                p_sys->i_pes_buf_cnt += p_block_in->i_buffer;
                 /* */
                 block_Release(p_block_in);
                 return 0;
@@ -924,7 +930,7 @@ static int DemuxRecAudio( demux_t *p_demux, ty_rec_hdr_t *rec_hdr, block_t *p_bl
 
         /* SA PES Header, No Audio Data                     */
         /* ================================================ */
-        if ( ( esOffset1 == 0 ) && ( l_rec_size == REC_SIZE ) )
+        if ( ( esOffset1 == 0 ) && ( p_block_in->i_buffer == REC_SIZE ) )
         {
             p_sys->lastAudioPTS = VLC_TICK_0 + get_pts( &p_block_in->p_buffer[
                         SA_PTS_OFFSET ] );
@@ -937,8 +943,7 @@ static int DemuxRecAudio( demux_t *p_demux, ty_rec_hdr_t *rec_hdr, block_t *p_bl
         /* ================================================ */
 
         /* Check for complete PES */
-        if (check_sync_pes(p_demux, p_block_in, esOffset1,
-                            l_rec_size) == -1)
+        if (check_sync_pes(p_demux, p_block_in, esOffset1) == -1)
         {
             /* partial PES header found, nothing else.
              * we're done. */
@@ -992,8 +997,7 @@ static int DemuxRecAudio( demux_t *p_demux, ty_rec_hdr_t *rec_hdr, block_t *p_bl
 #endif
 
         /* Check for complete PES */
-        if (check_sync_pes(p_demux, p_block_in, esOffset1,
-                            l_rec_size) == -1)
+        if (check_sync_pes(p_demux, p_block_in, esOffset1) == -1)
         {
             /* partial PES header found, nothing else.  we're done. */
             block_Release(p_block_in);
@@ -1054,20 +1058,18 @@ static bool DemuxRecCc( demux_t *p_demux, ty_rec_hdr_t *rec_hdr, block_t *p_bloc
 static int ty_stream_seek_pct(demux_t *p_demux, double seek_pct)
 {
     demux_sys_t *p_sys = p_demux->p_sys;
-    int64_t seek_pos = p_sys->i_stream_size * seek_pct;
+    const uint64_t seek_pos = p_sys->i_stream_size * seek_pct;
     uint64_t l_skip_amt;
-    unsigned i_cur_part;
 
     /* if we're not seekable, there's nothing to do */
     if (!p_sys->b_seekable)
         return VLC_EGENERIC;
 
     /* figure out which part & chunk we want & go there */
-    i_cur_part = seek_pos / TIVO_PART_LENGTH;
     p_sys->i_cur_chunk = seek_pos / CHUNK_SIZE;
 
     /* try to read the part header (master chunk) if it's there */
-    if (vlc_stream_Seek( p_demux->s, i_cur_part * TIVO_PART_LENGTH ) ||
+    if (vlc_stream_Seek( p_demux->s, (seek_pos / TIVO_PART_LENGTH) * TIVO_PART_LENGTH ) ||
         parse_master(p_demux) != VLC_SUCCESS)
     {
         /* can't seek stream */
@@ -1085,18 +1087,18 @@ static int ty_stream_seek_pct(demux_t *p_demux, double seek_pct)
     get_chunk_header(p_demux);
 
     /* seek within the chunk to get roughly to where we want */
-    p_sys->i_cur_rec = (int)
+    p_sys->i_cur_rec = (size_t)
       ((double) ((seek_pos % CHUNK_SIZE) / (double) (CHUNK_SIZE)) * p_sys->i_num_recs);
-    msg_Dbg(p_demux, "Seeked to file pos %"PRId64, seek_pos);
-    msg_Dbg(p_demux, " (chunk %d, record %d)",
-             p_sys->i_cur_chunk - 1, p_sys->i_cur_rec);
+    msg_Dbg(p_demux, "Seeked to file pos %"PRIu64, seek_pos);
+    msg_Dbg(p_demux, " (chunk %" PRIu64 ", record %zu)",
+             p_sys->i_cur_chunk ? p_sys->i_cur_chunk - 1 : 0, p_sys->i_cur_rec);
 
     /* seek to the start of this record's data.
      * to do that, we have to skip past all prior records */
     l_skip_amt = 0;
-    for ( int i=0; i<p_sys->i_cur_rec; i++)
+    for ( size_t i=0; i<p_sys->i_cur_rec; i++)
         l_skip_amt += p_sys->rec_hdrs[i].l_rec_size;
-    if( vlc_stream_Seek(p_demux->s, ((p_sys->i_cur_chunk-1) * CHUNK_SIZE) +
+    if( vlc_stream_Seek(p_demux->s, ((p_sys->i_cur_chunk ? p_sys->i_cur_chunk - 1 : 0) * CHUNK_SIZE) +
                         (p_sys->i_num_recs * REC_SIZE) + l_skip_amt + 4) != VLC_SUCCESS )
         return VLC_EGENERIC;
 
@@ -1566,6 +1568,9 @@ static int ty_stream_seek_time(demux_t *p_demux, uint64_t l_seek_time)
     }
 
     /* determine which chunk has our seek_time */
+    if (p_sys->i_bits_per_seq_entry > (ARRAY_SIZE(p_sys->seq_table->chunk_bitmask) * 8))
+        i = p_sys->i_bits_per_seq_entry; // pretend we looped through the chunks
+    else
     for (i=0; i<p_sys->i_bits_per_seq_entry; i++) {
         uint64_t l_chunk_nr = i_seq_entry * p_sys->i_bits_per_seq_entry + i;
         uint64_t l_chunk_offset = (l_chunk_nr + 1) * CHUNK_SIZE;
@@ -1584,7 +1589,7 @@ static int ty_stream_seek_time(demux_t *p_demux, uint64_t l_seek_time)
             p_sys->i_stuff_cnt = 0;
             get_chunk_header(p_demux);
             // check ty PTS for the SEQ entry in this chunk
-            if (p_sys->i_seq_rec < 0 || p_sys->i_seq_rec >= p_sys->i_num_recs) {
+            if (p_sys->i_seq_rec >= p_sys->i_num_recs) {
                 msg_Err(p_demux, "no SEQ hdr in chunk; table had one.");
                 /* Seek to beginning of original chunk & reload it */
                 if(vlc_stream_Seek(p_demux->s, (l_cur_pos / CHUNK_SIZE) * CHUNK_SIZE) != VLC_SUCCESS)
@@ -1619,7 +1624,7 @@ static int ty_stream_seek_time(demux_t *p_demux, uint64_t l_seek_time)
        so we need to skip past any stream data prior to the seq_rec
        in this chunk */
     i_skip_cnt = 0;
-    for (int j=0; j<p_sys->i_seq_rec; j++)
+    for (size_t j=0; j<p_sys->i_seq_rec; j++)
         i_skip_cnt += p_sys->rec_hdrs[j].l_rec_size;
     if(vlc_stream_Read(p_demux->s, NULL, i_skip_cnt) != i_skip_cnt)
         return VLC_EGENERIC;
@@ -1896,13 +1901,14 @@ static int analyze_chunk(demux_t *p_demux, const uint8_t *p_chunk)
 /* =========================================================================== */
 static int get_chunk_header(demux_t *p_demux)
 {
-    int i_readSize, i_num_recs;
+    int i_readSize;
+    size_t i_num_recs;
     uint8_t *p_hdr_buf;
     const uint8_t *p_peek;
     demux_sys_t *p_sys = p_demux->p_sys;
     int i_payload_size;             /* sum of all records' sizes */
 
-    msg_Dbg(p_demux, "parsing ty chunk #%d", p_sys->i_cur_chunk );
+    msg_Dbg(p_demux, "parsing ty chunk #%" PRIu64, p_sys->i_cur_chunk );
 
     /* if we have left-over filler space from the last chunk, get that */
     if (p_sys->i_stuff_cnt > 0) {
@@ -1968,7 +1974,7 @@ static int get_chunk_header(demux_t *p_demux)
     p_hdr_buf = malloc(i_num_recs * REC_SIZE);
     if (p_hdr_buf == NULL)
         return VLC_ENOMEM;
-    if (vlc_stream_Read(p_demux->s, p_hdr_buf, i_num_recs * REC_SIZE) < i_num_recs * REC_SIZE) {
+    if (vlc_stream_Read(p_demux->s, p_hdr_buf, i_num_recs * REC_SIZE) < (ssize_t)(i_num_recs * REC_SIZE)) {
         free( p_hdr_buf );
         p_sys->eof = true;
         return 0;
@@ -1992,9 +1998,9 @@ static int get_chunk_header(demux_t *p_demux)
 
 
 static ty_rec_hdr_t *parse_chunk_headers( const uint8_t *p_buf,
-                                          int i_num_recs, int *pi_payload_size)
+                                          size_t i_num_recs, int *pi_payload_size)
 {
-    int i;
+    size_t i;
     ty_rec_hdr_t *p_hdrs, *p_rec_hdr;
 
     *pi_payload_size = 0;
