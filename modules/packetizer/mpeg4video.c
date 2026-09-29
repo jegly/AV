@@ -71,15 +71,14 @@ typedef struct
     vlc_tick_t i_interpolated_pts;
     vlc_tick_t i_interpolated_dts;
     vlc_tick_t i_last_ref_pts;
-    int64_t i_last_time_ref;
-    int64_t i_time_ref;
+    uint64_t i_last_time_ref;
+    uint64_t i_time_ref;
     int64_t i_last_time;
-    int64_t i_last_timeincr;
+    uint32_t i_last_timeincr;
 
     unsigned int i_flags;
 
-    int         i_fps_num;
-    int         i_fps_den;
+    uint16_t    i_fps_num;
 
     bool  b_frame;
 
@@ -99,7 +98,6 @@ static block_t *ParseMPEGBlock( decoder_t *, block_t * );
 static int ParseVOL( decoder_t *, es_format_t *, uint8_t *, int );
 static int ParseVO( decoder_t *, block_t * );
 static int ParseVOP( decoder_t *, block_t * );
-static int vlc_log2( unsigned int );
 
 #define VIDEO_OBJECT_MASK                       0x01f
 #define VIDEO_OBJECT_LAYER_MASK                 0x00f
@@ -438,11 +436,9 @@ static int ParseVOL( decoder_t *p_dec, es_format_t *fmt,
 
     if( bs_read1( &s ) )
     {
-        int i_time_increment_bits = vlc_log2( p_sys->i_fps_num - 1 ) + 1;
+        unsigned i_time_increment_bits = vlc_log2( p_sys->i_fps_num - 1 ) + 1;
 
-        if( i_time_increment_bits < 1 ) i_time_increment_bits = 1;
-
-        p_sys->i_fps_den = bs_read( &s, i_time_increment_bits );
+        bs_skip( &s, i_time_increment_bits ); /* i_fps_den */
     }
     if( i_shape == 0 )
     {
@@ -502,12 +498,10 @@ static int ParseVO( decoder_t *p_dec, block_t *p_vo )
 static int ParseVOP( decoder_t *p_dec, block_t *p_vop )
 {
     decoder_sys_t *p_sys = p_dec->p_sys;
-    int64_t i_time_increment, i_time_ref;
-    int i_modulo_time_base = 0, i_time_increment_bits;
+    uint64_t i_time_ref;
+    uint32_t i_time_increment;
+    uint64_t i_modulo_time_base = 0;
     bs_t s;
-
-    if( p_sys->i_fps_num == 0 )
-        return VLC_EGENERIC;
 
     bs_init( &s, &p_vop->p_buffer[4], p_vop->i_buffer - 4 );
 
@@ -523,18 +517,13 @@ static int ParseVOP( decoder_t *p_dec, block_t *p_vop )
         p_sys->i_flags = BLOCK_FLAG_TYPE_B;
         p_sys->b_frame = true;
         break;
-    case 3: /* gni ? */
+    case 3: /* Sprite : ISO 14496-2 § 6.3.5 */
         p_sys->i_flags = BLOCK_FLAG_TYPE_PB;
         break;
     }
 
     while( bs_read( &s, 1 ) ) i_modulo_time_base++;
     if( !bs_read1( &s ) ) return VLC_EGENERIC; /* Marker */
-
-    /* VOP time increment */
-    i_time_increment_bits = vlc_log2(p_sys->i_fps_num - 1) + 1;
-    if( i_time_increment_bits < 1 ) i_time_increment_bits = 1;
-    i_time_increment = bs_read( &s, i_time_increment_bits );
 
     /* Interpolate PTS/DTS */
     if( !(p_sys->i_flags & BLOCK_FLAG_TYPE_B) )
@@ -550,14 +539,21 @@ static int ParseVOP( decoder_t *p_dec, block_t *p_vop )
             (i_modulo_time_base * p_sys->i_fps_num);
     }
 
-    int64_t i_time_diff = (i_time_ref + i_time_increment) - (p_sys->i_last_time + p_sys->i_last_timeincr);
-    if( i_modulo_time_base == 0 && i_time_diff < 0 && -i_time_diff > p_sys->i_fps_num )
+    if( p_sys->i_fps_num )
     {
-        msg_Warn(p_dec, "missing modulo_time_base update");
-        i_modulo_time_base += -i_time_diff / p_sys->i_fps_num;
-        p_sys->i_time_ref += (i_modulo_time_base * p_sys->i_fps_num);
-        p_sys->i_time_ref += p_sys->i_last_timeincr % p_sys->i_fps_num;
-        i_time_ref = p_sys->i_time_ref;
+        /* VOP time increment */
+        unsigned i_time_increment_bits = vlc_log2(p_sys->i_fps_num - 1) + 1;
+        i_time_increment = bs_read( &s, i_time_increment_bits );
+
+        int64_t i_time_diff = (i_time_ref + i_time_increment) - (p_sys->i_last_time + p_sys->i_last_timeincr);
+        if( i_modulo_time_base == 0 && i_time_diff < 0 && -i_time_diff > p_sys->i_fps_num )
+        {
+            msg_Warn(p_dec, "missing modulo_time_base update");
+            i_modulo_time_base += -i_time_diff / p_sys->i_fps_num;
+            p_sys->i_time_ref += (i_modulo_time_base * p_sys->i_fps_num);
+            p_sys->i_time_ref += p_sys->i_last_timeincr % p_sys->i_fps_num;
+            i_time_ref = p_sys->i_time_ref;
+        }
     }
 
     if( p_sys->i_fps_num < 5 && /* Work-around buggy streams */
@@ -570,7 +566,7 @@ static int ParseVOP( decoder_t *p_dec, block_t *p_vop )
     }
     else
     {
-        i_time_diff = (i_time_ref + i_time_increment) - (p_sys->i_last_time + p_sys->i_last_timeincr);
+        int64_t i_time_diff = (i_time_ref + i_time_increment) - (p_sys->i_last_time + p_sys->i_last_timeincr);
         p_sys->i_interpolated_pts += vlc_tick_from_samples( i_time_diff, p_sys->i_fps_num );
     }
 
@@ -581,7 +577,8 @@ static int ParseVOP( decoder_t *p_dec, block_t *p_vop )
 #endif
 
     p_sys->i_last_time = i_time_ref;
-    p_sys->i_last_timeincr = i_time_increment;
+    if( p_sys->i_fps_num )
+        p_sys->i_last_timeincr = i_time_increment;
 
     /* Correct interpolated dts when we receive a new pts/dts */
     if( p_vop->i_pts != VLC_TICK_INVALID )
@@ -611,33 +608,4 @@ static int ParseVOP( decoder_t *p_dec, block_t *p_vop )
     }
 
     return VLC_SUCCESS;
-}
-
-/* look at libavutil av_log2 ;) */
-static int vlc_log2( unsigned int v )
-{
-    int n = 0;
-    static const int vlc_log2_table[16] =
-    {
-        0,0,1,1,2,2,2,2, 3,3,3,3,3,3,3,3
-    };
-
-    if( v&0xffff0000 )
-    {
-        v >>= 16;
-        n += 16;
-    }
-    if( v&0xff00 )
-    {
-        v >>= 8;
-        n += 8;
-    }
-    if( v&0xf0 )
-    {
-        v >>= 4;
-        n += 4;
-    }
-    n += vlc_log2_table[v];
-
-    return n;
 }

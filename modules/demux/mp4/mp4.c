@@ -760,37 +760,35 @@ static block_t * MP4_EIA608_Convert( block_t * p_block )
     block_t *p_newblock = NULL;
 
     assert(p_block->i_buffer <= SSIZE_MAX);
-    /* always need at least 10 bytes (atom size+header+1pair)*/
+
     if (p_block->i_buffer < 8)
         goto out;
 
     if(!memcmp(&p_block->p_buffer[4], "ccdp", 4))
         return MP4_CDP_Convert(p_block);
 
-    uint_fast32_t cdat_size = GetDWBE(p_block->p_buffer) - 8;
-    if (cdat_size > p_block->i_buffer)
+    uint_fast32_t atomsize = GetDWBE(p_block->p_buffer);
+    if (atomsize < 8 || atomsize > p_block->i_buffer ||
+        memcmp(&p_block->p_buffer[4], "cdat", 4))
         goto out;
 
     const uint8_t *cdat = p_block->p_buffer + 8;
-    if (memcmp(cdat - 4, "cdat", 4) != 0)
-        goto out;
+    uint_fast32_t cdat_size = (atomsize - 8) & ~1;
 
-    p_block->p_buffer += cdat_size;
-    p_block->i_buffer -= cdat_size;
-    cdat_size &= ~1;
+    p_block->p_buffer += atomsize;
+    p_block->i_buffer -= atomsize;
 
     /* cdt2 is optional */
     uint_fast32_t cdt2_size = 0;
     const uint8_t *cdt2 = NULL;
 
     if (p_block->i_buffer >= 8) {
-        size_t size = GetDWBE(p_block->p_buffer) - 8;
+        atomsize = GetDWBE(p_block->p_buffer);
 
-        if (size <= p_block->i_buffer) {
+        if (atomsize > 8 && atomsize <= p_block->i_buffer &&
+            !memcmp(&p_block->p_buffer[4], "cdt2", 4)) {
             cdt2 = p_block->p_buffer + 8;
-
-            if (memcmp(cdt2 - 4, "cdt2", 4) == 0)
-                cdt2_size = size & ~1;
+            cdt2_size = (atomsize - 8) & ~1;
         }
     }
 
@@ -800,14 +798,14 @@ static block_t * MP4_EIA608_Convert( block_t * p_block )
 
     uint8_t *out = p_newblock->p_buffer;
 
-    while (cdat_size > 0) {
+    while (cdat_size >= 2) {
          *(out++) = CC_PKT_BYTE0(0); /* cc1 == field 0 */
          *(out++) = *(cdat++);
          *(out++) = *(cdat++);
          cdat_size -= 2;
     }
 
-    while (cdt2_size > 0) {
+    while (cdt2_size >= 2) {
          *(out++) = CC_PKT_BYTE0(1); /* cc2 == field 1 */
          *(out++) = *(cdt2++);
          *(out++) = *(cdt2++);
@@ -926,6 +924,18 @@ static block_t * MP4_Block_Convert( demux_t *p_demux, const mp4_track_t *p_track
     {
         p_block = MP4_RTPHint_Convert( p_demux, p_block, p_track->fmt.i_codec );
     }
+    else if ( p_track->fmt.i_codec == VLC_CODEC_APV )
+    {
+        // the APU are preceeded by 4 bytes containing the size of the data
+        // this is not used by decoder like libavcodec or openapv.
+        if( p_block->i_buffer < 4 )
+        {
+            block_Release( p_block );
+            return NULL;
+        }
+        p_block->p_buffer += 4;
+        p_block->i_buffer -= 4;
+    }
 
     return p_block;
 }
@@ -966,9 +976,11 @@ static void MP4_Block_Send( demux_t *p_demux, mp4_track_t *p_track, block_t *p_b
             do
             {
                 startpos = vlc_stream_Tell(p_sys->asfpacketsys.s);
+                const uint32_t i_packet_size =
+                    p_track->BOXDATA(p_asf)->i_packet_size;
                 DemuxASFPacket( &p_sys->asfpacketsys,
-                                p_block->i_buffer - startpos,
-                                p_block->i_buffer - startpos,
+                                __MIN(p_block->i_buffer - startpos, i_packet_size),
+                                i_packet_size,
                                 0, p_block->i_buffer );
             } while( vlc_stream_Tell(p_sys->asfpacketsys.s) != p_block->i_buffer &&
                      vlc_stream_Tell(p_sys->asfpacketsys.s) != startpos );
@@ -1726,14 +1738,6 @@ static int DemuxTrack( demux_t *p_demux, mp4_track_t *tk, uint64_t i_readpos,
 
             p_block->i_length = MP4_GetSamplesDuration( tk, i_nb_samples );
 
-            if ( tk->fmt.i_codec == VLC_CODEC_APV )
-            {
-                // the APU are preceeded by 4 bytes containing the size of the data
-                // this is not used by decoder like libavcodec or openapv.
-                p_block->p_buffer += 4;
-                p_block->i_buffer -= 4;
-            }
-
             MP4_Block_Send( p_demux, tk, p_block );
         }
 
@@ -1767,8 +1771,7 @@ static int DemuxMoov( demux_t *p_demux )
         mp4_track_t *tk = &p_sys->track[i_track];
         bool b = true;
 
-        if( !tk->b_ok || MP4_isMetadata( tk ) ||
-            ( tk->b_selected && tk->i_sample >= tk->i_sample_count ) )
+        if( !tk->b_ok || MP4_isMetadata( tk ) )
         {
             continue;
         }
@@ -3453,19 +3456,25 @@ static int TrackGetNearestSeekPoint( demux_t *p_demux, mp4_track_t *p_track,
             }
         }
     }
-
-    if (*pi_sync_sample != i_sample)
+    else // no stss, any sample is sync point
     {
-        /* try or refine using RAP with recovery roll info */
-        uint32_t i_alternative_sync_sample = i_sample;
-        if( MP4_SampleToGroupInfo( p_track->p_stbl, i_sample, SAMPLEGROUP_rap,
-                                0, &i_alternative_sync_sample, true, NULL ) )
+        return VLC_EGENERIC;
+    }
+
+    if( i_ret == VLC_SUCCESS && *pi_sync_sample == i_sample )
+        return VLC_SUCCESS; // nothing to do
+
+    /* Empty but present stss, try or refine using RAP with recovery roll info */
+    uint32_t i_alternative_sync_sample = i_sample;
+    if( MP4_SampleToGroupInfo( p_track->p_stbl, i_sample, SAMPLEGROUP_rap,
+                               0, &i_alternative_sync_sample, true, NULL ) )
+    {
+        msg_Dbg( p_demux, "tk %u sbgp gives %d --> %" PRIu32 " (sample number)",
+                 p_track->i_track_ID, i_sample, i_alternative_sync_sample );
+        if( i_alternative_sync_sample > *pi_sync_sample || i_ret != VLC_SUCCESS )
         {
-            msg_Dbg( p_demux, "tk %u sbgp gives %d --> %" PRIu32 " (sample number)",
-                    p_track->i_track_ID, i_sample, i_alternative_sync_sample );
-            if( i_alternative_sync_sample > *pi_sync_sample &&
-                i_alternative_sync_sample < i_sample )
-                *pi_sync_sample = i_alternative_sync_sample;
+            *pi_sync_sample = i_alternative_sync_sample;
+            return VLC_SUCCESS;
         }
     }
 
@@ -4908,7 +4917,7 @@ static int ProbeFragments( demux_t *p_demux, bool b_force, bool *pb_fragmented )
                     if( p_traf )
                         p_tfdt = MP4_BoxGet( p_traf, "tfdt" );
 
-                    if( p_tfdt && BOXDATA(p_tfdt) )
+                    if( p_tfdt && BOXDATA(p_tfdt) && p_tfdt->data.p_tfdt->i_base_media_decode_time <= INT64_MAX)
                     {
                         pi_track_times[i] = p_tfdt->data.p_tfdt->i_base_media_decode_time;
                     }
@@ -5279,10 +5288,16 @@ static int FragCreateTrunIndex( demux_t *p_demux, MP4_Box_t *p_moof,
         if( !p_track )
             continue;
 
-        p_track->context.runs.p_array = realloc_or_free(p_track->context.runs.p_array,
-            (i_trun_count + p_track->context.runs.i_count) * sizeof(mp4_run_t));
-        if(!p_track->context.runs.p_array)
+        void *r_array = vlc_reallocarray( p_track->context.runs.p_array,
+            i_trun_count + p_track->context.runs.i_count, sizeof(mp4_run_t) );
+        if ( unlikely( r_array == NULL ))
+        {
+            free( p_track->context.runs.p_array );
+            p_track->context.runs.p_array = NULL;
+            p_track->context.runs.i_count = 0;
             continue;
+        }
+        p_track->context.runs.p_array = r_array;
         memset(&p_track->context.runs.p_array[p_track->context.runs.i_count], 0, i_trun_count * sizeof(mp4_run_t));
         i_trun_count += p_track->context.runs.i_count;
 
