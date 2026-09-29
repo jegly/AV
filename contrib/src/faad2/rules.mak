@@ -1,6 +1,6 @@
 # faad2
 
-FAAD2_VERSION := 2.11.2
+FAAD2_VERSION := 2.11.3
 FAAD2_URL := $(GITHUB)/knik0/faad2/archive/refs/tags/$(FAAD2_VERSION).tar.gz
 
 ifeq ($(findstring $(ARCH),arm),)
@@ -8,6 +8,9 @@ ifeq ($(findstring $(ARCH),arm),)
 ifdef GPL
 PKGS += faad2
 endif
+endif
+ifeq ($(call need_pkg,"faad2"),)
+PKGS_FOUND += faad2
 endif
 
 $(TARBALLS)/faad2-$(FAAD2_VERSION).tar.gz:
