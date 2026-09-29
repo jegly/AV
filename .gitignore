@@ -73,3 +73,5 @@ static-lib/
 /debbuild/
 *.snap
 .craft/
+/build/
+.build-tmp/
