@@ -72,7 +72,8 @@ static const vlc_meta_type_t libvlc_to_vlc_meta[] =
     [libvlc_meta_Actors]       = vlc_meta_Actors,
     [libvlc_meta_AlbumArtist]  = vlc_meta_AlbumArtist,
     [libvlc_meta_DiscNumber]   = vlc_meta_DiscNumber,
-    [libvlc_meta_DiscTotal]    = vlc_meta_DiscTotal
+    [libvlc_meta_DiscTotal]    = vlc_meta_DiscTotal,
+    [libvlc_meta_Compilation]  = vlc_meta_Compilation,
 };
 
 static_assert(
@@ -544,10 +545,12 @@ libvlc_media_get_duration( libvlc_media_t * p_md )
         return -1;
     }
 
-    if (!input_item_IsPreparsed( p_md->p_input_item ))
+    vlc_tick_t i_duration = input_item_GetDuration( p_md->p_input_item );
+
+    if( i_duration == 0 && !input_item_IsPreparsed( p_md->p_input_item ) )
         return -1;
 
-    return libvlc_time_from_vlc_tick(input_item_GetDuration( p_md->p_input_item ));
+    return libvlc_time_from_vlc_tick( i_duration );
 }
 
 int
