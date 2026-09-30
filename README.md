@@ -79,6 +79,26 @@ A `.deb` is published on the [Releases](../../releases) page.
 
 * * *
 
+## Verify
+
+SHA-256 checksums for each release:
+
+| Release | File | SHA-256 |
+|---|---|---|
+| 4.0.1 snap | `audiovisual_v4.0.1-2-g0c797497e4_amd64.snap` | `a92cd5e8a661c6892b70dd866ce6abe9d37ec6144f8dd60ac6068428e886f1d9` |
+| 4.0.1 deb | `av_4.0.1-1_amd64.deb` | `7d819d534cc9ab0b7bbd1a07faebf9c51ffb4851d64a8038bbc81408b8553f6e` |
+
+To check the snap the store is serving:
+
+```sh
+snap download audiovisual --channel=stable
+sha256sum audiovisual_*.snap
+```
+
+The snap version names the commit it was built from: `v4.0.1-2-g0c797497e4` is commit `0c797497e4`. `snap list audiovisual` shows it.
+
+* * *
+
 ## Build from Source
 
 Building uses the same meson/ninja pipeline as upstream VLC, through a project-specific configure wrapper:
