@@ -216,13 +216,13 @@ parts:
       - wayland-protocols
 
     stage-packages:
-      # Derived from `ldd` over the built binary and all 308 plugins, not
+      # Derived from `ldd` over the built binary and all of its plugins, not
       # guessed. Two things fall out of that:
       #
       #  * ffmpeg is NOT here. contrib links libavcodec/libavformat/libavutil
       #    statically (ldd reports 0 dynamic references), so staging Ubuntu's
       #    libav*60 would have shipped a second, older ffmpeg - 8.0.1, with no
-      #    security upload since Feb 2026 - beside our contrib 8.1.2.
+      #    security upload since Feb 2026 - beside our contrib 9.0.
       #  * the same applies to dav1d, aom, vpx, theora, matroska, ass, taglib,
       #    freetype, fribidi, samplerate, soxr and ebur128: all contrib-static.
       #
