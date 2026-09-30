@@ -116,7 +116,9 @@ parts:
 
     override-pull: |
       craftctl default
-      craftctl set version=$(git describe --always HEAD)
+      # --long always embeds the commit hash (v4.0.1-0-g07b85dbde2), so
+      # `snap list` shows exactly which commit a revision was built from.
+      craftctl set version=$(git describe --tags --long --always HEAD)
 
     override-build: |
       export PATH=$PWD/extras/tools/build/bin:${PATH:-}
